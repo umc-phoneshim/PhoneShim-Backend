@@ -1,13 +1,9 @@
 import type { RequestHandler } from 'express';
 
-const notFoundHandler: RequestHandler = (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: {
-      code: 'NOT_FOUND',
-      message: 'Requested resource was not found'
-    }
-  });
+import { NotFoundError } from '../errors/appError';
+
+const notFoundHandler: RequestHandler = (_req, _res) => {
+  throw new NotFoundError();
 };
 
 export default notFoundHandler;
