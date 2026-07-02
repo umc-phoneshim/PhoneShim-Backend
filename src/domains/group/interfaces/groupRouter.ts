@@ -1,5 +1,7 @@
 import { Router } from 'express';
 
+import { validateRequestBody } from '../../../shared/validation/requestValidator';
+import { createGroupRequestSchema } from './groupDto';
 import * as groupController from './groupController';
 
 const router = Router();
@@ -29,7 +31,7 @@ router.get('/', groupController.listGroups);
  *     tags:
  *       - Groups
  *     requestBody:
- *       required: false
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
@@ -38,6 +40,8 @@ router.get('/', groupController.listGroups);
  *               name:
  *                 type: string
  *                 example: "Morning study group"
+ *             required:
+ *               - name
  *     responses:
  *       201:
  *         description: Study group created.
@@ -46,6 +50,6 @@ router.get('/', groupController.listGroups);
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  */
-router.post('/', groupController.createGroup);
+router.post('/', validateRequestBody(createGroupRequestSchema), groupController.createGroup);
 
 export default router;
