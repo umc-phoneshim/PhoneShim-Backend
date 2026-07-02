@@ -1,5 +1,7 @@
 import { Router } from 'express';
 
+import { validateRequestBody } from '../../../shared/validation/requestValidator';
+import { startTimerRequestSchema, stopTimerRequestSchema } from './timerDto';
 import * as timerController from './timerController';
 
 const router = Router();
@@ -12,7 +14,7 @@ const router = Router();
  *     tags:
  *       - Timers
  *     requestBody:
- *       required: false
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
@@ -21,6 +23,8 @@ const router = Router();
  *               userId:
  *                 type: string
  *                 example: "user-id"
+ *             required:
+ *               - userId
  *     responses:
  *       201:
  *         description: Timer started.
@@ -29,7 +33,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  */
-router.post('/start', timerController.startTimer);
+router.post('/start', validateRequestBody(startTimerRequestSchema), timerController.startTimer);
 
 /**
  * @openapi
@@ -39,7 +43,7 @@ router.post('/start', timerController.startTimer);
  *     tags:
  *       - Timers
  *     requestBody:
- *       required: false
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
@@ -48,6 +52,8 @@ router.post('/start', timerController.startTimer);
  *               timerId:
  *                 type: string
  *                 example: "timer-id"
+ *             required:
+ *               - timerId
  *     responses:
  *       200:
  *         description: Timer stopped.
@@ -56,6 +62,6 @@ router.post('/start', timerController.startTimer);
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  */
-router.post('/stop', timerController.stopTimer);
+router.post('/stop', validateRequestBody(stopTimerRequestSchema), timerController.stopTimer);
 
 export default router;

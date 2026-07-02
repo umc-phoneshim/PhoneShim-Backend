@@ -1,5 +1,5 @@
 export type CreateGroupPayload = {
-  name?: string;
+  name: string;
 };
 
 export type Group = {
@@ -7,9 +7,9 @@ export type Group = {
   createdAt: string;
 };
 
-export function createGroupEntity(payload: CreateGroupPayload = {}): Group {
+export function createGroupEntity(payload: CreateGroupPayload): Group {
   return {
-    name: payload.name || '',
+    name: payload.name,
     createdAt: new Date().toISOString()
   };
 }
