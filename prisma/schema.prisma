@@ -7,101 +7,152 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum TimerStatus {
-  RUNNING
-  PAUSED
-  STOPPED
+enum AuthProvider {
+  GOOGLE
+  KAKAO
 }
 
-enum GroupRole {
-  OWNER
-  MEMBER
+enum RestrictMode {
+  NONE
+  FULL_PHONE
+  SPECIFIC_APP
 }
 
 model User {
-  id           String         @id @default(uuid())
-  email        String         @unique
-  nickname     String
-  passwordHash String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id                    String       @id @default(uuid()) @db.Uuid
+  email                 String       @unique
+  name                  String
+  provider              AuthProvider
+  profileImage          String?      @map("profile_image")
+  withdrawalRequestedAt DateTime?    @map("withdrawal_requested_at") // 탈퇴 요청 시각. null이면 활성 (14일 유예)
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
 
-  refreshTokens RefreshToken[]
-  studyTimer    StudyTimer?
-  studyLogs     StudyLog[]
-  groupMembers  GroupMember[]
+  totalGoal     TotalGoal?
+  alertSetting  AlertSetting?
+  monitoredApps MonitoredApp[]
+  reminders     Reminder[]
+  usageLogs     UsageLog[]
+  usageReasons  UsageReason[]
 
   @@map("users")
 }
 
-model RefreshToken {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  userId    String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+model TotalGoal {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @unique @map("user_id") @db.Uuid
+  targetMinutes Int      @map("target_minutes")
+  restrictAfter Boolean  @default(false) @map("restrict_after")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@map("refresh_tokens")
+  @@map("total_goals")
 }
 
-model StudyTimer {
-  id        String      @id @default(uuid())
-  userId    String
-  status    TimerStatus @default(RUNNING)
-  startedAt DateTime    @default(now())
-  pausedAt  DateTime?
-  stoppedAt DateTime?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+model MonitoredApp {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  appName   String   @map("app_name")
+  appIcon   String?  @map("app_icon")
+  order     Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appGoal                AppGoal?
+  usageLogs              UsageLog[]
+  usageReasons           UsageReason[]
+  reminderRestrictedApps ReminderRestrictedApp[]
+
+  @@map("monitored_apps")
+}
+
+model AppGoal {
+  id             String   @id @default(uuid()) @db.Uuid
+  monitoredAppId String   @unique @map("monitored_app_id") @db.Uuid
+  targetMinutes  Int      @map("target_minutes")
+  targetCount    Int      @map("target_count")
+  restrictAfter  Boolean  @default(false) @map("restrict_after")
+  goalReason     String?  @map("goal_reason")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  monitoredApp MonitoredApp @relation(fields: [monitoredAppId], references: [id], onDelete: Cascade)
+
+  @@map("app_goals")
+}
+
+model UsageLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  monitoredAppId String   @map("monitored_app_id") @db.Uuid
+  date           DateTime @db.Date
+  startTime      DateTime @map("start_time")
+  endTime        DateTime @map("end_time")
+  usedMinutes    Int      @map("used_minutes")
+  entryCount     Int      @map("entry_count")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monitoredApp MonitoredApp @relation(fields: [monitoredAppId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("usage_logs")
+}
+
+model Reminder {
+  id           String       @id @default(uuid()) @db.Uuid
+  userId       String       @map("user_id") @db.Uuid
+  date         DateTime     @db.Date
+  title        String
+  startTime    DateTime     @map("start_time")
+  endTime      DateTime     @map("end_time")
+  restrictMode RestrictMode @default(NONE) @map("restrict_mode")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reminderRestrictedApps ReminderRestrictedApp[]
+
+  @@index([userId, date])
+  @@map("reminders")
+}
+
+model ReminderRestrictedApp {
+  reminderId     String @map("reminder_id") @db.Uuid
+  monitoredAppId String @map("monitored_app_id") @db.Uuid
+
+  reminder     Reminder     @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  monitoredApp MonitoredApp @relation(fields: [monitoredAppId], references: [id], onDelete: Cascade)
+
+  @@id([reminderId, monitoredAppId])
+  @@map("reminder_restricted_apps")
+}
+
+model UsageReason {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  monitoredAppId String   @map("monitored_app_id") @db.Uuid
+  date           DateTime @db.Date
+  timeRangeStart DateTime @map("time_range_start")
+  timeRangeEnd   DateTime @map("time_range_end")
+  reason         String   @db.VarChar(100)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monitoredApp MonitoredApp @relation(fields: [monitoredAppId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("usage_reasons")
+}
+
+model AlertSetting {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  alertTime String   @default("22:00") @map("alert_time") // 데일리 리포트 알림 시각 (HH:mm)
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([status])
-  @@unique([userId])
-  @@map("study_timers")
-}
-
-model StudyLog {
-  id              String   @id @default(uuid())
-  userId          String
-  startedAt       DateTime
-  endedAt         DateTime
-  durationSeconds Int
-  createdAt       DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([startedAt])
-  @@map("study_logs")
-}
-
-model Group {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  members GroupMember[]
-
-  @@map("groups")
-}
-
-model GroupMember {
-  id        String    @id @default(uuid())
-  groupId   String
-  userId    String
-  role      GroupRole @default(MEMBER)
-  joinedAt  DateTime  @default(now())
-
-  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([groupId, userId])
-  @@index([userId])
-  @@map("group_members")
+  @@map("alert_settings")
 }
