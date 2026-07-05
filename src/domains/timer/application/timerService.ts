@@ -2,7 +2,7 @@ import { createTimer, type CreateTimerPayload } from '../domain/timerEntity';
 import * as timerRepository from '../infrastructure/timerRepository';
 
 type StopTimerPayload = {
-  timerId?: string | number;
+  timerId: string;
 };
 
 export async function startTimer(payload: CreateTimerPayload) {
@@ -13,7 +13,7 @@ export async function startTimer(payload: CreateTimerPayload) {
 
 export async function stopTimer(payload: StopTimerPayload) {
   return {
-    timerId: payload.timerId || null,
+    timerId: payload.timerId,
     stoppedAt: new Date().toISOString()
   };
 }
