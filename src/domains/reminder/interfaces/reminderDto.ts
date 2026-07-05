@@ -1,7 +1,6 @@
 import type { RestrictMode } from '@prisma/client';
 
 export type CreateReminderRequestBody = {
-  userId: string;
   date: string;
   title: string;
   startTime: string;

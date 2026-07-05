@@ -1,5 +1,4 @@
 import asyncHandler from '../../../shared/utils/asyncHandler';
-import AppError from '../../../shared/errors/AppError';
 
 import * as totalGoalService from '../application/totalGoalService';
 import type { CreateTotalGoalRequestBody, UpdateTotalGoalRequestBody } from './totalGoalDto';
@@ -7,7 +6,7 @@ import type { CreateTotalGoalRequestBody, UpdateTotalGoalRequestBody } from './t
 export const createTotalGoal = asyncHandler(async (req, res) => {
   const body = req.body as CreateTotalGoalRequestBody;
 
-  const totalGoal = await totalGoalService.registerTotalGoal(body);
+  const totalGoal = await totalGoalService.registerTotalGoal({ ...body, userId: req.userId! });
 
   res.status(201).json({
     success: true,
@@ -16,13 +15,7 @@ export const createTotalGoal = asyncHandler(async (req, res) => {
 });
 
 export const getTotalGoal = asyncHandler(async (req, res) => {
-  const userId = req.query.userId as string | undefined;
-
-  if (!userId) {
-    throw new AppError('userId 쿼리 파라미터는 필수입니다.', 400, 'INVALID_USER_ID');
-  }
-
-  const totalGoal = await totalGoalService.getTotalGoalByUserId(userId);
+  const totalGoal = await totalGoalService.getTotalGoalByUserId(req.userId!);
 
   res.json({
     success: true,

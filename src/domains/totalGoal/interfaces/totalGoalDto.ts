@@ -1,5 +1,4 @@
 export type CreateTotalGoalRequestBody = {
-  userId: string;
   targetMinutes: number;
   restrictAfter?: boolean;
 };

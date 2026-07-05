@@ -1,13 +1,18 @@
 import asyncHandler from '../../../shared/utils/asyncHandler';
-import AppError from '../../../shared/errors/AppError';
 
 import * as monitoredAppService from '../application/monitoredAppService';
-import type { CreateMonitoredAppRequestBody, UpdateMonitoredAppRequestBody } from './monitoredAppDto';
+import type {
+  CreateMonitoredAppRequestBody,
+  UpdateMonitoredAppRequestBody
+} from './monitoredAppDto';
 
 export const createMonitoredApp = asyncHandler(async (req, res) => {
   const body = req.body as CreateMonitoredAppRequestBody;
 
-  const monitoredApp = await monitoredAppService.registerMonitoredApp(body);
+  const monitoredApp = await monitoredAppService.registerMonitoredApp({
+    ...body,
+    userId: req.userId!
+  });
 
   res.status(201).json({
     success: true,
@@ -16,13 +21,7 @@ export const createMonitoredApp = asyncHandler(async (req, res) => {
 });
 
 export const getMonitoredApps = asyncHandler(async (req, res) => {
-  const userId = req.query.userId as string | undefined;
-
-  if (!userId) {
-    throw new AppError('userId 쿼리 파라미터는 필수입니다.', 400, 'INVALID_USER_ID');
-  }
-
-  const monitoredApps = await monitoredAppService.getMonitoredApps(userId);
+  const monitoredApps = await monitoredAppService.getMonitoredApps(req.userId!);
 
   res.json({
     success: true,

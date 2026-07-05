@@ -1,8 +1,12 @@
 import { Router } from 'express';
 
+import authMiddleware from '../../../shared/middlewares/authMiddleware';
+
 import * as alertSettingController from './alertSettingController';
 
 const router = Router();
+
+router.use(authMiddleware);
 
 router.post('/', alertSettingController.createAlertSetting);
 router.get('/', alertSettingController.getAlertSetting);

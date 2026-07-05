@@ -1,5 +1,4 @@
 import asyncHandler from '../../../shared/utils/asyncHandler';
-import AppError from '../../../shared/errors/AppError';
 
 import * as reminderService from '../application/reminderService';
 import type { CreateReminderRequestBody, UpdateReminderRequestBody } from './reminderDto';
@@ -7,7 +6,7 @@ import type { CreateReminderRequestBody, UpdateReminderRequestBody } from './rem
 export const createReminder = asyncHandler(async (req, res) => {
   const body = req.body as CreateReminderRequestBody;
 
-  const reminder = await reminderService.registerReminder(body);
+  const reminder = await reminderService.registerReminder({ ...body, userId: req.userId! });
 
   res.status(201).json({
     success: true,
@@ -16,13 +15,7 @@ export const createReminder = asyncHandler(async (req, res) => {
 });
 
 export const getReminders = asyncHandler(async (req, res) => {
-  const userId = req.query.userId as string | undefined;
-
-  if (!userId) {
-    throw new AppError('userId 쿼리 파라미터는 필수입니다.', 400, 'INVALID_USER_ID');
-  }
-
-  const reminders = await reminderService.getReminders(userId);
+  const reminders = await reminderService.getReminders(req.userId!);
 
   res.json({
     success: true,

@@ -1,5 +1,4 @@
 import asyncHandler from '../../../shared/utils/asyncHandler';
-import AppError from '../../../shared/errors/AppError';
 
 import * as alertSettingService from '../application/alertSettingService';
 import type {
@@ -10,7 +9,10 @@ import type {
 export const createAlertSetting = asyncHandler(async (req, res) => {
   const body = req.body as CreateAlertSettingRequestBody;
 
-  const alertSetting = await alertSettingService.registerAlertSetting(body);
+  const alertSetting = await alertSettingService.registerAlertSetting({
+    ...body,
+    userId: req.userId!
+  });
 
   res.status(201).json({
     success: true,
@@ -19,13 +21,7 @@ export const createAlertSetting = asyncHandler(async (req, res) => {
 });
 
 export const getAlertSetting = asyncHandler(async (req, res) => {
-  const userId = req.query.userId as string | undefined;
-
-  if (!userId) {
-    throw new AppError('userId 쿼리 파라미터는 필수입니다.', 400, 'INVALID_USER_ID');
-  }
-
-  const alertSetting = await alertSettingService.getAlertSettingByUserId(userId);
+  const alertSetting = await alertSettingService.getAlertSettingByUserId(req.userId!);
 
   res.json({
     success: true,

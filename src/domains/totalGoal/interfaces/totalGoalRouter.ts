@@ -1,8 +1,12 @@
 import { Router } from 'express';
 
+import authMiddleware from '../../../shared/middlewares/authMiddleware';
+
 import * as totalGoalController from './totalGoalController';
 
 const router = Router();
+
+router.use(authMiddleware);
 
 router.post('/', totalGoalController.createTotalGoal);
 router.get('/', totalGoalController.getTotalGoal);

@@ -1,5 +1,4 @@
 export type CreateAlertSettingRequestBody = {
-  userId: string;
   alertTime?: string;
 };
 
