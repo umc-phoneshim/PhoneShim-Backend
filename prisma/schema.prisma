@@ -7,9 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum AuthProvider {
+enum SocialProvider {
   GOOGLE
   KAKAO
+}
+
+enum UserStatus {
+  ACTIVE
+  WITHDRAWAL_PENDING
+  DELETED
 }
 
 enum RestrictMode {
@@ -19,23 +25,42 @@ enum RestrictMode {
 }
 
 model User {
-  id                    String       @id @default(uuid()) @db.Uuid
-  email                 String       @unique
+  id                    String     @id @default(uuid()) @db.Uuid
+  email                 String     @unique
   name                  String
-  provider              AuthProvider
-  profileImage          String?      @map("profile_image")
-  withdrawalRequestedAt DateTime?    @map("withdrawal_requested_at") // 탈퇴 요청 시각. null이면 활성 (14일 유예)
-  createdAt             DateTime     @default(now()) @map("created_at")
-  updatedAt             DateTime     @updatedAt @map("updated_at")
+  profileImage          String?    @map("profile_image")
+  motivation            String?    @db.VarChar(100)
+  status                UserStatus @default(ACTIVE)
+  withdrawalRequestedAt DateTime?  @map("withdrawal_requested_at")
+  deletedAt             DateTime?  @map("deleted_at")
+  createdAt             DateTime   @default(now()) @map("created_at")
+  updatedAt             DateTime   @updatedAt @map("updated_at")
 
-  totalGoal     TotalGoal?
-  alertSetting  AlertSetting?
-  monitoredApps MonitoredApp[]
-  reminders     Reminder[]
-  usageLogs     UsageLog[]
-  usageReasons  UsageReason[]
+  socialAccounts SocialAccount[]
+  totalGoal      TotalGoal?
+  alertSetting   AlertSetting?
+  monitoredApps  MonitoredApp[]
+  reminders      Reminder[]
+  usageLogs      UsageLog[]
+  usageReasons   UsageReason[]
 
   @@map("users")
+}
+
+model SocialAccount {
+  id             String         @id @default(uuid()) @db.Uuid
+  userId         String         @map("user_id") @db.Uuid
+  provider       SocialProvider
+  providerUserId String         @map("provider_user_id")
+  email          String
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("social_accounts")
 }
 
 model TotalGoal {
@@ -52,12 +77,14 @@ model TotalGoal {
 }
 
 model MonitoredApp {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  appName   String   @map("app_name")
-  appIcon   String?  @map("app_icon")
-  order     Int
-  createdAt DateTime @default(now()) @map("created_at")
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  packageName String   @map("package_name")
+  appName     String   @map("app_name")
+  appIcon     String?  @map("app_icon")
+  sortOrder   Int      @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   appGoal                AppGoal?
@@ -65,6 +92,8 @@ model MonitoredApp {
   usageReasons           UsageReason[]
   reminderRestrictedApps ReminderRestrictedApp[]
 
+  @@unique([userId, packageName])
+  @@index([userId, sortOrder])
   @@map("monitored_apps")
 }
 
@@ -74,7 +103,7 @@ model AppGoal {
   targetMinutes  Int      @map("target_minutes")
   targetCount    Int      @map("target_count")
   restrictAfter  Boolean  @default(false) @map("restrict_after")
-  goalReason     String?  @map("goal_reason")
+  goalReason     String?  @map("goal_reason") @db.VarChar(100)
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -88,16 +117,38 @@ model UsageLog {
   userId         String   @map("user_id") @db.Uuid
   monitoredAppId String   @map("monitored_app_id") @db.Uuid
   date           DateTime @db.Date
-  startTime      DateTime @map("start_time")
-  endTime        DateTime @map("end_time")
   usedMinutes    Int      @map("used_minutes")
   entryCount     Int      @map("entry_count")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monitoredApp MonitoredApp  @relation(fields: [monitoredAppId], references: [id], onDelete: Cascade)
+  usageReasons UsageReason[]
+
+  @@unique([userId, monitoredAppId, date])
+  @@index([userId, date])
+  @@map("usage_logs")
+}
+
+model UsageReason {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  monitoredAppId String   @map("monitored_app_id") @db.Uuid
+  usageLogId     String?  @map("usage_log_id") @db.Uuid
+  date           DateTime @db.Date
+  timeRangeStart DateTime @map("time_range_start")
+  timeRangeEnd   DateTime @map("time_range_end")
+  reason         String   @db.VarChar(100)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   monitoredApp MonitoredApp @relation(fields: [monitoredAppId], references: [id], onDelete: Cascade)
+  usageLog     UsageLog?    @relation(fields: [usageLogId], references: [id], onDelete: SetNull)
 
   @@index([userId, date])
-  @@map("usage_logs")
+  @@map("usage_reasons")
 }
 
 model Reminder {
@@ -114,7 +165,7 @@ model Reminder {
   user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   reminderRestrictedApps ReminderRestrictedApp[]
 
-  @@index([userId, date])
+  @@index([userId, date, startTime])
   @@map("reminders")
 }
 
@@ -129,28 +180,13 @@ model ReminderRestrictedApp {
   @@map("reminder_restricted_apps")
 }
 
-model UsageReason {
-  id             String   @id @default(uuid()) @db.Uuid
-  userId         String   @map("user_id") @db.Uuid
-  monitoredAppId String   @map("monitored_app_id") @db.Uuid
-  date           DateTime @db.Date
-  timeRangeStart DateTime @map("time_range_start")
-  timeRangeEnd   DateTime @map("time_range_end")
-  reason         String   @db.VarChar(100)
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  monitoredApp MonitoredApp @relation(fields: [monitoredAppId], references: [id], onDelete: Cascade)
-
-  @@index([userId, date])
-  @@map("usage_reasons")
-}
-
 model AlertSetting {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @unique @map("user_id") @db.Uuid
-  alertTime String   @default("22:00") @map("alert_time") // 데일리 리포트 알림 시각 (HH:mm)
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @unique @map("user_id") @db.Uuid
+  enabled          Boolean  @default(true)
+  alertTimeMinutes Int      @default(1320) @map("alert_time_minutes")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
