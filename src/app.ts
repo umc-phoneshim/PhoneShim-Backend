@@ -1,6 +1,7 @@
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 
+import authRouter from './domains/auth/interfaces/authController'; // 1. Auth 라우터 임포트 추가
 import groupRouter from './domains/group/interfaces/groupRouter';
 import timerRouter from './domains/timer/interfaces/timerRouter';
 import errorHandler from './shared/middlewares/errorHandler';
@@ -9,24 +10,24 @@ import { swaggerSpec } from './shared/swagger/swaggerConfig';
 
 const app = express();
 
-app.use(express.json());
+app.use(express.json()); 
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 /**
  * @openapi
  * /health:
- *   get:
- *     summary: Health check
- *     tags:
- *       - System
- *     responses:
- *       200:
- *         description: Server is healthy.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/SuccessResponse'
+ * get:
+ * summary: Health check
+ * tags:
+ * - System
+ * responses:
+ * - 200:
+ * description: Server is healthy.
+ * content:
+ * application/json:
+ * schema:
+ * $ref: '#/components/schemas/SuccessResponse'
  */
 app.get('/health', (req, res) => {
   res.json({
@@ -37,6 +38,8 @@ app.get('/health', (req, res) => {
   });
 });
 
+
+app.use('/api/auth', authRouter); 
 app.use('/api/timers', timerRouter);
 app.use('/api/groups', groupRouter);
 
