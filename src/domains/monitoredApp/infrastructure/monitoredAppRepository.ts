@@ -10,12 +10,17 @@ import type {
 
 export const UNIQUE_CONSTRAINT_ERROR = 'P2002';
 export const RECORD_NOT_FOUND_ERROR = 'P2025';
-export const TRANSACTION_CONFLICT_ERROR = 'P2034';
 
 type PrismaMonitoredApp = Awaited<ReturnType<typeof prisma.monitoredApp.findFirst>>;
 
 function toEntity(monitoredApp: NonNullable<PrismaMonitoredApp>): MonitoredApp {
   return monitoredApp;
+}
+
+export async function countByUserId(userId: string) {
+  return prisma.monitoredApp.count({
+    where: { userId }
+  });
 }
 
 export async function findAllByUserId(userId: string) {
@@ -48,33 +53,18 @@ export async function findByPackageNameAndUserId(packageName: string, userId: st
   return monitoredApp ? toEntity(monitoredApp) : null;
 }
 
-export async function saveWithinUserLimit(monitoredApp: NewMonitoredApp, maxCount: number) {
-  const created = await prisma.$transaction(
-    async (tx) => {
-      const currentCount = await tx.monitoredApp.count({
-        where: { userId: monitoredApp.userId }
-      });
-
-      if (currentCount >= maxCount) {
-        return null;
-      }
-
-      return tx.monitoredApp.create({
-        data: {
-          userId: monitoredApp.userId,
-          packageName: monitoredApp.packageName,
-          appName: monitoredApp.appName,
-          appIcon: monitoredApp.appIcon,
-          sortOrder: monitoredApp.sortOrder ?? currentCount
-        }
-      });
-    },
-    {
-      isolationLevel: Prisma.TransactionIsolationLevel.Serializable
+export async function save(monitoredApp: NewMonitoredApp) {
+  const created = await prisma.monitoredApp.create({
+    data: {
+      userId: monitoredApp.userId,
+      packageName: monitoredApp.packageName,
+      appName: monitoredApp.appName,
+      appIcon: monitoredApp.appIcon,
+      sortOrder: monitoredApp.sortOrder ?? 0
     }
-  );
+  });
 
-  return created ? toEntity(created) : null;
+  return toEntity(created);
 }
 
 export async function update(
