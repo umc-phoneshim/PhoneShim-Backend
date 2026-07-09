@@ -10,7 +10,7 @@ export async function getUserByUserId(userId: string) {
   const user = await userRepository.getUserByUserId(userId);
 
   if (!user) {
-    throw new NotFoundError('USER_NOT_FOUND', '해당 유저를 찾을 수 없습니다.');
+    throw new NotFoundError('해당 유저를 찾을 수 없습니다.', 'USER_NOT_FOUND');
   }
 
   return user;
