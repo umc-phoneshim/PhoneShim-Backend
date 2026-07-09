@@ -3,6 +3,7 @@ import swaggerUi from 'swagger-ui-express';
 
 import groupRouter from './domains/group/interfaces/groupRouter';
 import timerRouter from './domains/timer/interfaces/timerRouter';
+import userRouter from './domains/user/interfaces/userRouter';
 import errorHandler from './shared/middlewares/errorHandler';
 import notFoundHandler from './shared/middlewares/notFoundHandler';
 import { swaggerSpec } from './shared/swagger/swaggerConfig';
@@ -39,6 +40,7 @@ app.get('/health', (req, res) => {
 
 app.use('/api/timers', timerRouter);
 app.use('/api/groups', groupRouter);
+app.use('/api/users', userRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
