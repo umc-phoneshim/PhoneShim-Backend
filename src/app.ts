@@ -1,6 +1,7 @@
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 
+import dashboardRouter from './domains/dashboard/interfaces/dashboardRouter';
 import groupRouter from './domains/group/interfaces/groupRouter';
 import monitoredAppRouter from './domains/monitoredApp/interfaces/monitoredAppRouter';
 import timerRouter from './domains/timer/interfaces/timerRouter';
@@ -41,6 +42,7 @@ app.get('/health', (req, res) => {
 app.use('/api/timers', timerRouter);
 app.use('/api/groups', groupRouter);
 app.use('/api/monitored-apps', monitoredAppRouter);
+app.use('/api/dashboard', dashboardRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
