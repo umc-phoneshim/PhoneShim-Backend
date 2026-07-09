@@ -5,8 +5,10 @@ import {
   createReminderEntity,
   createReminderUpdate,
   ensureRestrictedAppsMatchMode,
+  ensureTimesMatchDate,
   ensureValidTimeRange,
   parseDateOnly,
+  toKstDateString,
   type CreateReminderPayload,
   type Reminder,
   type UpdateReminderPayload,
@@ -22,17 +24,6 @@ const ensureUserId = (userId: string) => {
   if (!userId.trim()) {
     throw new BadRequestError('userId is required', 'VALIDATION_ERROR');
   }
-};
-
-const toKstDateString = (date = new Date()): string => {
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
-
-  return formatter.format(date);
 };
 
 const ensureRestrictedAppOwnership = async (userId: string, restrictedAppIds: string[]) => {
@@ -94,7 +85,7 @@ export async function createReminder(payload: CreateReminderPayload) {
 export async function getReminders(userId: string, date?: string) {
   ensureUserId(userId);
 
-  return reminderRepository.findAllByUserIdAndDate(userId, parseDateOnly(date ?? toKstDateString()));
+  return reminderRepository.findAllByUserIdAndDate(userId, parseDateOnly(date ?? toKstDateString(new Date())));
 }
 
 export async function getReminderById(id: string, userId: string) {
@@ -115,6 +106,7 @@ export async function updateReminder(id: string, userId: string, payload: Update
   const resolved = resolveUpdate(current, update);
 
   ensureValidTimeRange(resolved.startTime, resolved.endTime);
+  ensureTimesMatchDate(resolved.date, resolved.startTime, resolved.endTime);
   ensureRestrictedAppsMatchMode(resolved.restrictMode, resolved.restrictedAppIds);
   await ensureRestrictedAppOwnership(userId, resolved.restrictedAppIds);
   await ensureNoOverlap(userId, resolved.date, resolved.startTime, resolved.endTime, id);

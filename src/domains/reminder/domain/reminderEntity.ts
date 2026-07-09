@@ -56,6 +56,12 @@ export type ValidatedReminderUpdate = {
 const VALID_RESTRICT_MODES = new Set<string>(Object.values(RestrictMode));
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MIN_REMINDER_DURATION_MS = 60 * 1000;
+const KST_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+});
 
 const normalizeRequiredString = (value: string, fieldName: string): string => {
   const normalized = value.trim();
@@ -73,6 +79,10 @@ export const parseDateOnly = (value: string): Date => {
   }
 
   return new Date(`${value}T00:00:00.000Z`);
+};
+
+export const toKstDateString = (date: Date): string => {
+  return KST_DATE_FORMATTER.format(date);
 };
 
 const parseIsoDateTime = (value: string, fieldName: string): Date => {
@@ -115,6 +125,16 @@ export const ensureValidTimeRange = (startTime: Date, endTime: Date) => {
   }
 };
 
+export const ensureTimesMatchDate = (date: Date, startTime: Date, endTime: Date) => {
+  const expectedDate = date.toISOString().slice(0, 10);
+  const startDate = toKstDateString(startTime);
+  const endDate = toKstDateString(endTime);
+
+  if (startDate !== expectedDate || endDate !== expectedDate) {
+    throw new BadRequestError('startTime and endTime must match date', 'INVALID_TIME_RANGE');
+  }
+};
+
 export const ensureRestrictedAppsMatchMode = (
   restrictMode: RestrictMode,
   restrictedAppIds: string[]
@@ -125,17 +145,19 @@ export const ensureRestrictedAppsMatchMode = (
 };
 
 export function createReminderEntity(payload: CreateReminderPayload): NewReminder {
+  const date = parseDateOnly(payload.date);
   const startTime = parseIsoDateTime(payload.startTime, 'startTime');
   const endTime = parseIsoDateTime(payload.endTime, 'endTime');
   const restrictMode = normalizeRestrictMode(payload.restrictMode);
   const restrictedAppIds = normalizeRestrictedAppIds(payload.restrictedAppIds);
 
   ensureValidTimeRange(startTime, endTime);
+  ensureTimesMatchDate(date, startTime, endTime);
   ensureRestrictedAppsMatchMode(restrictMode, restrictedAppIds);
 
   return {
     userId: normalizeRequiredString(payload.userId, 'userId'),
-    date: parseDateOnly(payload.date),
+    date,
     title: normalizeRequiredString(payload.title, 'title'),
     startTime,
     endTime,
