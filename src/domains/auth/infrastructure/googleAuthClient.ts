@@ -20,10 +20,13 @@ export async function fetchGoogleUserInfo(accessToken: string): Promise<GoogleUs
 
   const data = await response.json();
 
+  if (!data.sub || typeof data.sub !== 'string') {
+    throw new UnauthorizedError('유효하지 않은 구글 토큰입니다. (sub 누락)', 'INVALID_TOKEN');
+  }
+
   if (!data.email) {
     throw new BadRequestError('구글 이메일 제공 동의가 필요합니다.', 'EMAIL_PERMISSION_REQUIRED');
   }
 
-  // 구글의 'sub' 필드가 유저 고유 식별자
   return { providerUserId: data.sub, email: data.email, name: data.name };
 }
