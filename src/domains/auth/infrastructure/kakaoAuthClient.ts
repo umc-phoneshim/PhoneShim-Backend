@@ -1,4 +1,5 @@
 // src/domains/auth/infrastructure/kakaoAuthClient.ts
+import { UnauthorizedError, BadRequestError } from '../../../shared/errors/appError';
 
 interface KakaoUserInfo {
   providerUserId: string;
@@ -14,7 +15,7 @@ export async function fetchKakaoUserInfo(accessToken: string): Promise<KakaoUser
   });
 
   if (!response.ok) {
-    throw new Error('INVALID_TOKEN');
+    throw new UnauthorizedError('유효하지 않은 카카오 토큰입니다.', 'INVALID_TOKEN');
   }
 
   const data = await response.json();
@@ -25,7 +26,7 @@ export async function fetchKakaoUserInfo(accessToken: string): Promise<KakaoUser
 
   if (!email) {
     // 카카오 이메일 제공 동의를 안 한 경우
-    throw new Error('EMAIL_PERMISSION_REQUIRED');
+    throw new BadRequestError('카카오 이메일 제공 동의가 필요합니다.', 'EMAIL_PERMISSION_REQUIRED');
   }
 
   return { providerUserId, email, nickname };
