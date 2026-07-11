@@ -1,6 +1,7 @@
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 
+import authRouter from './domains/auth/interfaces/authController';
 import dashboardRouter from './domains/dashboard/interfaces/dashboardRouter';
 import groupRouter from './domains/group/interfaces/groupRouter';
 import appGoalRouter from './domains/appGoal/interfaces/appGoalRouter';
@@ -43,6 +44,7 @@ app.get('/health', (req, res) => {
   });
 });
 
+app.use('/api/auth', authRouter);
 app.use('/api/timers', timerRouter);
 app.use('/api/groups', groupRouter);
 app.use('/api/users', userRouter);
