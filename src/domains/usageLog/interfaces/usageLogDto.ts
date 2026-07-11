@@ -1,20 +1,18 @@
-export type UpsertUsageLogRequest = {
+export type RecordUsageLogRequest = {
   monitoredAppId: string;
-  date: string;
+  date?: string;
   usedMinutes: number;
   entryCount: number;
 };
 
-export const upsertUsageLogRequestSchema = {
+export const recordUsageLogRequestSchema = {
   monitoredAppId: {
     type: 'string',
     required: true,
     minLength: 1
   },
   date: {
-    type: 'string',
-    required: true,
-    minLength: 1
+    type: 'string'
   },
   usedMinutes: {
     type: 'number',
