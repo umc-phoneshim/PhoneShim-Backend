@@ -1,4 +1,4 @@
-import { UnauthorizedError } from '../../../shared/errors/appError';
+import { BadRequestError, UnauthorizedError } from '../../../shared/errors/appError';
 import { sendCreated, sendSuccess } from '../../../shared/responses/apiResponse';
 import asyncHandler from '../../../shared/utils/asyncHandler';
 
@@ -15,18 +15,28 @@ const getAuthenticatedUserId = (user?: Express.Request['user']): string => {
 
 export const createAppGoal = asyncHandler(async (req, res) => {
   const userId = getAuthenticatedUserId(req.user);
-  const result = await appGoalService.createAppGoal(
-    userId,
-    req.params.monitoredAppId,
-    req.body as CreateAppGoalRequest
-  );
+  const body = req.body as CreateAppGoalRequest;
+
+  const result = await appGoalService.createAppGoal(userId, {
+    monitoredAppId: body.monitoredAppId,
+    targetMinutes: body.targetMinutes,
+    targetCount: body.targetCount,
+    restrictAfter: body.restrictAfter,
+    goalReason: body.goalReason
+  });
 
   sendCreated(res, result);
 });
 
 export const getAppGoal = asyncHandler(async (req, res) => {
   const userId = getAuthenticatedUserId(req.user);
-  const result = await appGoalService.getAppGoal(userId, req.params.monitoredAppId);
+  const monitoredAppId = req.query.monitoredAppId;
+
+  if (typeof monitoredAppId !== 'string' || !monitoredAppId.trim()) {
+    throw new BadRequestError('monitoredAppId is required', 'VALIDATION_ERROR');
+  }
+
+  const result = await appGoalService.getAppGoalByMonitoredAppId(userId, monitoredAppId);
 
   sendSuccess(res, result);
 });
@@ -34,8 +44,8 @@ export const getAppGoal = asyncHandler(async (req, res) => {
 export const updateAppGoal = asyncHandler(async (req, res) => {
   const userId = getAuthenticatedUserId(req.user);
   const result = await appGoalService.updateAppGoal(
+    req.params.id,
     userId,
-    req.params.monitoredAppId,
     req.body as UpdateAppGoalRequest
   );
 
@@ -45,7 +55,7 @@ export const updateAppGoal = asyncHandler(async (req, res) => {
 export const deleteAppGoal = asyncHandler(async (req, res) => {
   const userId = getAuthenticatedUserId(req.user);
 
-  await appGoalService.deleteAppGoal(userId, req.params.monitoredAppId);
+  await appGoalService.deleteAppGoal(req.params.id, userId);
 
   res.status(204).send();
 });

@@ -45,3 +45,12 @@ export async function findAllByUserIdAndDate(
     })
   );
 }
+
+// API_SPEC.md의 GET /api/usage-logs?date= — usage_logs 원본 행을 그대로 반환합니다
+// (monitoredApp/goal과 합치지 않음).
+export async function findAllByUserIdForDate(userId: string, date: Date) {
+  return prisma.usageLog.findMany({
+    where: { userId, date },
+    orderBy: { createdAt: 'asc' }
+  });
+}

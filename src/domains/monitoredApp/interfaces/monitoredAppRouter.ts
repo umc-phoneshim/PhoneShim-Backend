@@ -2,7 +2,6 @@ import { Router } from 'express';
 
 import { authenticate } from '../../../shared/middlewares/authMiddleware';
 import { validateRequestBody } from '../../../shared/validation/requestValidator';
-import appGoalRouter from '../../appGoal/interfaces/appGoalRouter';
 import {
   createMonitoredAppRequestSchema,
   updateMonitoredAppRequestSchema
@@ -12,8 +11,6 @@ import * as monitoredAppController from './monitoredAppController';
 const router = Router();
 
 router.use(authenticate);
-
-router.use('/:monitoredAppId/goal', appGoalRouter);
 
 /**
  * @openapi

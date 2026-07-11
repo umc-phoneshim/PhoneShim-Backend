@@ -21,6 +21,14 @@ export async function findByMonitoredAppId(monitoredAppId: string) {
   return appGoal ? toEntity(appGoal) : null;
 }
 
+export async function findById(id: string) {
+  const appGoal = await prisma.appGoal.findUnique({
+    where: { id }
+  });
+
+  return appGoal ? toEntity(appGoal) : null;
+}
+
 export async function findAllByMonitoredAppIds(monitoredAppIds: string[]) {
   if (monitoredAppIds.length === 0) {
     return [];
@@ -41,18 +49,18 @@ export async function save(appGoal: NewAppGoal) {
   return toEntity(created);
 }
 
-export async function update(monitoredAppId: string, payload: ValidatedAppGoalUpdate) {
+export async function updateById(id: string, payload: ValidatedAppGoalUpdate) {
   const updated = await prisma.appGoal.update({
-    where: { monitoredAppId },
+    where: { id },
     data: payload
   });
 
   return toEntity(updated);
 }
 
-export async function deleteByMonitoredAppId(monitoredAppId: string) {
+export async function deleteById(id: string) {
   await prisma.appGoal.delete({
-    where: { monitoredAppId }
+    where: { id }
   });
 }
 

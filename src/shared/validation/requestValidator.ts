@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express';
 
 import { BadRequestError } from '../errors/appError';
 
-type FieldType = 'string' | 'number';
+type FieldType = 'string' | 'number' | 'boolean';
 
 type FieldRule = {
   type: FieldType;
@@ -19,6 +19,10 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => {
 const isValidType = (value: unknown, type: FieldType): boolean => {
   if (type === 'string') {
     return typeof value === 'string';
+  }
+
+  if (type === 'boolean') {
+    return typeof value === 'boolean';
   }
 
   return typeof value === 'number' && Number.isFinite(value);

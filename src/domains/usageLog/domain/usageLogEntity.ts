@@ -45,6 +45,11 @@ export function getKstDateOnly(input?: string | Date): Date {
   return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()));
 }
 
+// API_SPEC.md 공통 규칙: 날짜는 YYYY-MM-DD 문자열로 응답합니다.
+export function formatDateOnly(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
 export function createUsageLogEntity(payload: RecordUsageLogPayload): NewUsageLog {
   if (!payload.userId.trim()) {
     throw new BadRequestError('userId is required', 'VALIDATION_ERROR');
@@ -59,10 +64,7 @@ export function createUsageLogEntity(payload: RecordUsageLogPayload): NewUsageLo
     !Number.isInteger(payload.usedMinutes) ||
     payload.usedMinutes < 0
   ) {
-    throw new BadRequestError(
-      'usedMinutes must be a non-negative integer',
-      'VALIDATION_ERROR'
-    );
+    throw new BadRequestError('usedMinutes must be a non-negative integer', 'VALIDATION_ERROR');
   }
 
   if (
@@ -82,10 +84,10 @@ export function createUsageLogEntity(payload: RecordUsageLogPayload): NewUsageLo
   };
 }
 
-// SAFE: 목표치의 80% 미만, WARNING: 80% 이상 100% 미만,
-// EXCEEDED: 목표치 도달/초과, NO_GOAL: 목표가 아직 설정되지 않음.
-export type AppUsageStatus = 'SAFE' | 'WARNING' | 'EXCEEDED' | 'NO_GOAL';
-
+// MAIN104 화면은 목표 대비 몇 %를 썼는지 퍼센티지로만 보여주고, 색상/상태 판단은
+// 하지 않습니다(정책 임계값이 바뀔 때마다 서버 배포가 필요해지는 걸 피하기 위해
+// 안드로이드 쪽에서 targetMinutes/usedMinutes로 직접 계산). 목표가 없는 경우는
+// targetMinutes/targetCount가 null인 것으로 구분합니다.
 export type MonitoredAppUsageStatus = {
   monitoredAppId: string;
   appName: string;
@@ -96,30 +98,16 @@ export type MonitoredAppUsageStatus = {
   targetCount: number | null;
   usedMinutes: number;
   entryCount: number;
-  status: AppUsageStatus;
 };
 
-const WARNING_THRESHOLD_RATIO = 0.8;
-
-// TODO: 현재는 targetMinutes(사용 시간) 기준으로만 status를 판단합니다.
-// AppGoal.targetCount(진입 횟수 목표)는 화면에 숫자로만 표시되고 색상 판단에는
-// 반영되지 않습니다. 안드로이드/기획 쪽에서 "횟수도 색상에 반영할지" 정해지면
-// 이 함수 시그니처에 entryCount/targetCount를 추가해서 반영하면 됩니다.
-export function calculateUsageStatus(
-  usedMinutes: number,
-  targetMinutes: number | null
-): AppUsageStatus {
-  if (targetMinutes === null || targetMinutes <= 0) {
-    return 'NO_GOAL';
-  }
-
-  if (usedMinutes >= targetMinutes) {
-    return 'EXCEEDED';
-  }
-
-  if (usedMinutes >= targetMinutes * WARNING_THRESHOLD_RATIO) {
-    return 'WARNING';
-  }
-
-  return 'SAFE';
-}
+// API_SPEC.md의 GET /api/usage-logs?date= 응답 형태 (usage_logs 원본 행 그대로)
+export type UsageLogRecord = {
+  id: string;
+  userId: string;
+  monitoredAppId: string;
+  date: string;
+  usedMinutes: number;
+  entryCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+};

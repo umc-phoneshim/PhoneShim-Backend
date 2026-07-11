@@ -50,7 +50,7 @@ const validateTargetMinutes = (value: number): number => {
   if (!Number.isInteger(value) || value < MIN_TARGET_MINUTES || value > MAX_TARGET_MINUTES) {
     throw new BadRequestError(
       `targetMinutes must be an integer between ${MIN_TARGET_MINUTES} and ${MAX_TARGET_MINUTES}`,
-      'VALIDATION_ERROR'
+      'INVALID_TARGET_MINUTES'
     );
   }
 
@@ -59,7 +59,10 @@ const validateTargetMinutes = (value: number): number => {
 
 const validateTargetCount = (value: number): number => {
   if (!Number.isInteger(value) || value < 1) {
-    throw new BadRequestError('targetCount must be an integer of 1 or more', 'VALIDATION_ERROR');
+    throw new BadRequestError(
+      'targetCount must be an integer of 1 or more',
+      'INVALID_TARGET_COUNT'
+    );
   }
 
   return value;
@@ -75,7 +78,7 @@ const normalizeGoalReason = (value: string | null | undefined): string | null | 
   if (normalized.length > MAX_GOAL_REASON_LENGTH) {
     throw new BadRequestError(
       `goalReason must be at most ${MAX_GOAL_REASON_LENGTH} characters`,
-      'VALIDATION_ERROR'
+      'INVALID_GOAL_REASON'
     );
   }
 

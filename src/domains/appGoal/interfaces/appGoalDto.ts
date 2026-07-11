@@ -1,4 +1,5 @@
 export type CreateAppGoalRequest = {
+  monitoredAppId: string;
   targetMinutes: number;
   targetCount: number;
   restrictAfter?: boolean;
@@ -13,6 +14,11 @@ export type UpdateAppGoalRequest = {
 };
 
 export const createAppGoalRequestSchema = {
+  monitoredAppId: {
+    type: 'string',
+    required: true,
+    minLength: 1
+  },
   targetMinutes: {
     type: 'number',
     required: true
@@ -20,6 +26,12 @@ export const createAppGoalRequestSchema = {
   targetCount: {
     type: 'number',
     required: true
+  },
+  restrictAfter: {
+    type: 'boolean'
+  },
+  goalReason: {
+    type: 'string'
   }
 } as const;
 
@@ -29,5 +41,11 @@ export const updateAppGoalRequestSchema = {
   },
   targetCount: {
     type: 'number'
+  },
+  restrictAfter: {
+    type: 'boolean'
+  },
+  goalReason: {
+    type: 'string'
   }
 } as const;

@@ -11,6 +11,21 @@ router.use(authenticate);
 
 /**
  * @openapi
+ * /api/usage-logs:
+ *   get:
+ *     summary: Get raw daily usage logs for a date (API_SPEC.md)
+ *     tags:
+ *       - UsageLogs
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Usage logs for the given date (KST today if omitted).
+ */
+router.get('/', usageLogController.getUsageLogsByDate);
+
+/**
+ * @openapi
  * /api/usage-logs/status:
  *   get:
  *     summary: Get today's monitored app usage status (MAIN104)
@@ -37,6 +52,10 @@ router.get('/status', usageLogController.getTodayUsageStatus);
  *       200:
  *         description: Usage log upserted.
  */
-router.put('/', validateRequestBody(recordUsageLogRequestSchema), usageLogController.recordUsageLog);
+router.put(
+  '/',
+  validateRequestBody(recordUsageLogRequestSchema),
+  usageLogController.recordUsageLog
+);
 
 export default router;

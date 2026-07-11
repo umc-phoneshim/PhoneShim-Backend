@@ -34,3 +34,14 @@ export const getTodayUsageStatus = asyncHandler(async (req, res) => {
 
   sendSuccess(res, result);
 });
+
+// API_SPEC.md: GET /api/usage-logs?date=
+export const getUsageLogsByDate = asyncHandler(async (req, res) => {
+  const userId = getAuthenticatedUserId(req.user);
+  const date = req.query.date;
+  const dateParam = typeof date === 'string' ? date : undefined;
+
+  const result = await usageLogService.getUsageLogsByDate(userId, dateParam);
+
+  sendSuccess(res, result);
+});

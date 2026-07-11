@@ -5,15 +5,15 @@ import { validateRequestBody } from '../../../shared/validation/requestValidator
 import { createAppGoalRequestSchema, updateAppGoalRequestSchema } from './appGoalDto';
 import * as appGoalController from './appGoalController';
 
-const router = Router({ mergeParams: true });
+const router = Router();
 
 router.use(authenticate);
 
 /**
  * @openapi
- * /api/monitored-apps/{monitoredAppId}/goal:
+ * /api/app-goals?monitoredAppId=:
  *   get:
- *     summary: Get an app goal
+ *     summary: Get an app goal for a monitored app
  *     tags:
  *       - AppGoals
  *     security:
@@ -26,7 +26,7 @@ router.get('/', appGoalController.getAppGoal);
 
 /**
  * @openapi
- * /api/monitored-apps/{monitoredAppId}/goal:
+ * /api/app-goals:
  *   post:
  *     summary: Create an app goal
  *     tags:
@@ -41,7 +41,7 @@ router.post('/', validateRequestBody(createAppGoalRequestSchema), appGoalControl
 
 /**
  * @openapi
- * /api/monitored-apps/{monitoredAppId}/goal:
+ * /api/app-goals/{id}:
  *   patch:
  *     summary: Update an app goal
  *     tags:
@@ -53,16 +53,16 @@ router.post('/', validateRequestBody(createAppGoalRequestSchema), appGoalControl
  *         description: App goal updated.
  */
 router.patch(
-  '/',
+  '/:id',
   validateRequestBody(updateAppGoalRequestSchema),
   appGoalController.updateAppGoal
 );
 
 /**
  * @openapi
- * /api/monitored-apps/{monitoredAppId}/goal:
+ * /api/app-goals/{id}:
  *   delete:
- *     summary: Delete an app goal
+ *     summary: Delete an app goal (extension beyond current API_SPEC.md — see docs update in this PR)
  *     tags:
  *       - AppGoals
  *     security:
@@ -71,6 +71,6 @@ router.patch(
  *       204:
  *         description: App goal deleted.
  */
-router.delete('/', appGoalController.deleteAppGoal);
+router.delete('/:id', appGoalController.deleteAppGoal);
 
 export default router;
