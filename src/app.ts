@@ -1,6 +1,7 @@
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 
+import dashboardRouter from './domains/dashboard/interfaces/dashboardRouter';
 import groupRouter from './domains/group/interfaces/groupRouter';
 import appGoalRouter from './domains/appGoal/interfaces/appGoalRouter';
 import monitoredAppRouter from './domains/monitoredApp/interfaces/monitoredAppRouter';
@@ -47,6 +48,7 @@ app.use('/api/monitored-apps', monitoredAppRouter);
 app.use('/api/app-goals', appGoalRouter);
 app.use('/api/usage-logs', usageLogRouter);
 app.use('/api/reminders', reminderRouter);
+app.use('/api/dashboard', dashboardRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
