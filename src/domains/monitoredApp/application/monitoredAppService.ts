@@ -21,10 +21,7 @@ const monitoredAppConflict = () =>
   new AppError(409, 'MONITORED_APP_CONFLICT', 'Request conflicted, please retry shortly');
 
 const monitoredAppLimitExceeded = () =>
-  new BadRequestError(
-    'A user can register up to 5 monitored apps',
-    'MONITORED_APP_LIMIT_EXCEEDED'
-  );
+  new BadRequestError('A user can register up to 5 monitored apps', 'MONITORED_APP_LIMIT_EXCEEDED');
 
 const ensureUserId = (userId: string) => {
   if (!userId.trim()) {
@@ -44,7 +41,9 @@ const ensurePackageNameIsUnique = async (
   }
 };
 
-const saveWithinUserLimitWithRetry = async (monitoredApp: ReturnType<typeof createMonitoredAppEntity>) => {
+const saveWithinUserLimitWithRetry = async (
+  monitoredApp: ReturnType<typeof createMonitoredAppEntity>
+) => {
   for (let attempt = 0; attempt <= MAX_CREATE_RETRY_COUNT; attempt += 1) {
     try {
       return await monitoredAppRepository.saveWithinUserLimit(
@@ -80,7 +79,12 @@ export async function createMonitoredApp(payload: CreateMonitoredAppPayload) {
 
     return created;
   } catch (error) {
-    if (monitoredAppRepository.isPrismaKnownError(error, monitoredAppRepository.UNIQUE_CONSTRAINT_ERROR)) {
+    if (
+      monitoredAppRepository.isPrismaKnownError(
+        error,
+        monitoredAppRepository.UNIQUE_CONSTRAINT_ERROR
+      )
+    ) {
       throw monitoredAppAlreadyExists();
     }
 
@@ -130,11 +134,21 @@ export async function updateMonitoredApp(
   try {
     return await monitoredAppRepository.update(id, userId, update);
   } catch (error) {
-    if (monitoredAppRepository.isPrismaKnownError(error, monitoredAppRepository.UNIQUE_CONSTRAINT_ERROR)) {
+    if (
+      monitoredAppRepository.isPrismaKnownError(
+        error,
+        monitoredAppRepository.UNIQUE_CONSTRAINT_ERROR
+      )
+    ) {
       throw monitoredAppAlreadyExists();
     }
 
-    if (monitoredAppRepository.isPrismaKnownError(error, monitoredAppRepository.RECORD_NOT_FOUND_ERROR)) {
+    if (
+      monitoredAppRepository.isPrismaKnownError(
+        error,
+        monitoredAppRepository.RECORD_NOT_FOUND_ERROR
+      )
+    ) {
       throw monitoredAppNotFound();
     }
 
@@ -148,7 +162,12 @@ export async function deleteMonitoredApp(id: string, userId: string) {
   try {
     await monitoredAppRepository.deleteByIdAndUserId(id, userId);
   } catch (error) {
-    if (monitoredAppRepository.isPrismaKnownError(error, monitoredAppRepository.RECORD_NOT_FOUND_ERROR)) {
+    if (
+      monitoredAppRepository.isPrismaKnownError(
+        error,
+        monitoredAppRepository.RECORD_NOT_FOUND_ERROR
+      )
+    ) {
       throw monitoredAppNotFound();
     }
 

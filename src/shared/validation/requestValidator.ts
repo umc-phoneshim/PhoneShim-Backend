@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express';
 
 import { BadRequestError } from '../errors/appError';
 
-type FieldType = 'string' | 'number' | 'stringArray';
+type FieldType = 'string' | 'number' | 'boolean' | 'stringArray';
 
 type FieldRule = {
   type: FieldType;
@@ -23,6 +23,10 @@ const isValidType = (value: unknown, type: FieldType): boolean => {
 
   if (type === 'number') {
     return typeof value === 'number' && Number.isFinite(value);
+  }
+
+  if (type === 'boolean') {
+    return typeof value === 'boolean';
   }
 
   return Array.isArray(value) && value.every((item) => typeof item === 'string');

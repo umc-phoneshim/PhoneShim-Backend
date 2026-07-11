@@ -77,11 +77,7 @@ export async function saveWithinUserLimit(monitoredApp: NewMonitoredApp, maxCoun
   return created ? toEntity(created) : null;
 }
 
-export async function update(
-  id: string,
-  userId: string,
-  payload: ValidatedMonitoredAppUpdate
-) {
+export async function update(id: string, userId: string, payload: ValidatedMonitoredAppUpdate) {
   const updated = await prisma.monitoredApp.update({
     where: {
       id,

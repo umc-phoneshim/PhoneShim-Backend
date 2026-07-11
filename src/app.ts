@@ -2,9 +2,11 @@ import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 
 import groupRouter from './domains/group/interfaces/groupRouter';
+import appGoalRouter from './domains/appGoal/interfaces/appGoalRouter';
 import monitoredAppRouter from './domains/monitoredApp/interfaces/monitoredAppRouter';
 import reminderRouter from './domains/reminder/interfaces/reminderRouter';
 import timerRouter from './domains/timer/interfaces/timerRouter';
+import usageLogRouter from './domains/usageLog/interfaces/usageLogRouter';
 import errorHandler from './shared/middlewares/errorHandler';
 import notFoundHandler from './shared/middlewares/notFoundHandler';
 import { swaggerSpec } from './shared/swagger/swaggerConfig';
@@ -42,6 +44,8 @@ app.get('/health', (req, res) => {
 app.use('/api/timers', timerRouter);
 app.use('/api/groups', groupRouter);
 app.use('/api/monitored-apps', monitoredAppRouter);
+app.use('/api/app-goals', appGoalRouter);
+app.use('/api/usage-logs', usageLogRouter);
 app.use('/api/reminders', reminderRouter);
 
 app.use(notFoundHandler);
