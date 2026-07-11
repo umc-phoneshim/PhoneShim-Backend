@@ -6,7 +6,6 @@ export type DailyUsageSummary = {
   isExceeded: boolean;
 };
 
-
 const KST_OFFSET_MINUTES = 9 * 60;
 
 export function getTodayInKst(): Date {
