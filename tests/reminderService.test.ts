@@ -1,5 +1,5 @@
 import { RestrictMode } from '@prisma/client';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as reminderRepository from '../src/domains/reminder/infrastructure/reminderRepository';
 import {
@@ -10,6 +10,7 @@ import {
   updateReminder
 } from '../src/domains/reminder/application/reminderService';
 import type { Reminder } from '../src/domains/reminder/domain/reminderEntity';
+import * as mainSyncEvents from '../src/shared/socket/mainSyncEvents';
 
 vi.mock('../src/domains/reminder/infrastructure/reminderRepository', () => ({
   RECORD_NOT_FOUND_ERROR: 'P2025',
@@ -23,6 +24,10 @@ vi.mock('../src/domains/reminder/infrastructure/reminderRepository', () => ({
   update: vi.fn()
 }));
 
+vi.mock('../src/shared/socket/mainSyncEvents', () => ({
+  emitReminderMainSyncEvent: vi.fn()
+}));
+
 const countOwnedMonitoredAppsMock = vi.mocked(reminderRepository.countOwnedMonitoredApps);
 const deleteByIdAndUserIdMock = vi.mocked(reminderRepository.deleteByIdAndUserId);
 const existsOverlappingReminderMock = vi.mocked(reminderRepository.existsOverlappingReminder);
@@ -30,6 +35,7 @@ const findAllByUserIdAndDateMock = vi.mocked(reminderRepository.findAllByUserIdA
 const findByIdAndUserIdMock = vi.mocked(reminderRepository.findByIdAndUserId);
 const saveMock = vi.mocked(reminderRepository.save);
 const updateMock = vi.mocked(reminderRepository.update);
+const emitReminderMainSyncEventMock = vi.mocked(mainSyncEvents.emitReminderMainSyncEvent);
 
 const existingReminder: Reminder = {
   id: 'reminder-1',
@@ -334,5 +340,83 @@ describe('reminderService CRUD operations', () => {
       code: 'REMINDER_NOT_FOUND'
     });
     expect(deleteByIdAndUserIdMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('reminderService MAIN105 sync events', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-16T01:00:00.000Z'));
+    countOwnedMonitoredAppsMock.mockResolvedValue(0);
+    existsOverlappingReminderMock.mockResolvedValue(false);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('emits a created event when a reminder is created for today in KST', async () => {
+    saveMock.mockImplementationOnce(async (reminder) => ({
+      ...reminder,
+      id: 'reminder-2',
+      createdAt: new Date('2026-07-16T01:00:00.000Z'),
+      updatedAt: new Date('2026-07-16T01:00:00.000Z')
+    }));
+
+    await createReminder({
+      userId: 'user-1',
+      date: '2026-07-16',
+      title: 'study',
+      startTime: '2026-07-16T09:00:00.000Z',
+      endTime: '2026-07-16T10:00:00.000Z'
+    });
+
+    expect(emitReminderMainSyncEventMock).toHaveBeenCalledWith('reminder.created');
+  });
+
+  it('does not emit a created event when a reminder is created for another date', async () => {
+    saveMock.mockImplementationOnce(async (reminder) => ({
+      ...reminder,
+      id: 'reminder-3',
+      createdAt: new Date('2026-07-16T01:00:00.000Z'),
+      updatedAt: new Date('2026-07-16T01:00:00.000Z')
+    }));
+
+    await createReminder({
+      userId: 'user-1',
+      date: '2026-07-17',
+      title: 'study',
+      startTime: '2026-07-17T09:00:00.000Z',
+      endTime: '2026-07-17T10:00:00.000Z'
+    });
+
+    expect(emitReminderMainSyncEventMock).not.toHaveBeenCalled();
+  });
+
+  it('emits an updated event when a reminder moves away from today in KST', async () => {
+    findByIdAndUserIdMock.mockResolvedValueOnce(existingReminder);
+    updateMock.mockImplementationOnce(async (_id, _userId, payload) => ({
+      ...existingReminder,
+      ...payload,
+      updatedAt: new Date('2026-07-16T01:00:00.000Z')
+    }));
+
+    await updateReminder('reminder-1', 'user-1', {
+      date: '2026-07-17',
+      startTime: '2026-07-17T09:00:00.000Z',
+      endTime: '2026-07-17T10:00:00.000Z'
+    });
+
+    expect(emitReminderMainSyncEventMock).toHaveBeenCalledWith('reminder.updated');
+  });
+
+  it('emits a deleted event when a reminder is deleted for today in KST', async () => {
+    findByIdAndUserIdMock.mockResolvedValueOnce(existingReminder);
+    deleteByIdAndUserIdMock.mockResolvedValueOnce(undefined);
+
+    await deleteReminder('reminder-1', 'user-1');
+
+    expect(emitReminderMainSyncEventMock).toHaveBeenCalledWith('reminder.deleted');
   });
 });
