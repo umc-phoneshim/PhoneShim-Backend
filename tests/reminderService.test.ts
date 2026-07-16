@@ -2,7 +2,13 @@ import { RestrictMode } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as reminderRepository from '../src/domains/reminder/infrastructure/reminderRepository';
-import { createReminder, updateReminder } from '../src/domains/reminder/application/reminderService';
+import {
+  createReminder,
+  deleteReminder,
+  getReminderById,
+  getReminders,
+  updateReminder
+} from '../src/domains/reminder/application/reminderService';
 import type { Reminder } from '../src/domains/reminder/domain/reminderEntity';
 
 vi.mock('../src/domains/reminder/infrastructure/reminderRepository', () => ({
@@ -18,7 +24,9 @@ vi.mock('../src/domains/reminder/infrastructure/reminderRepository', () => ({
 }));
 
 const countOwnedMonitoredAppsMock = vi.mocked(reminderRepository.countOwnedMonitoredApps);
+const deleteByIdAndUserIdMock = vi.mocked(reminderRepository.deleteByIdAndUserId);
 const existsOverlappingReminderMock = vi.mocked(reminderRepository.existsOverlappingReminder);
+const findAllByUserIdAndDateMock = vi.mocked(reminderRepository.findAllByUserIdAndDate);
 const findByIdAndUserIdMock = vi.mocked(reminderRepository.findByIdAndUserId);
 const saveMock = vi.mocked(reminderRepository.save);
 const updateMock = vi.mocked(reminderRepository.update);
@@ -222,5 +230,109 @@ describe('reminderService overlap validation', () => {
     });
 
     expect(updateMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('reminderService CRUD operations', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    countOwnedMonitoredAppsMock.mockResolvedValue(0);
+    existsOverlappingReminderMock.mockResolvedValue(false);
+  });
+
+  it('gets reminders by user id and selected date', async () => {
+    findAllByUserIdAndDateMock.mockResolvedValueOnce([existingReminder]);
+
+    const reminders = await getReminders('user-1', '2026-07-16');
+
+    expect(reminders).toEqual([existingReminder]);
+    expect(findAllByUserIdAndDateMock).toHaveBeenCalledWith(
+      'user-1',
+      new Date('2026-07-16T00:00:00.000Z')
+    );
+  });
+
+  it('uses the current KST date when no date is provided', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-15T15:30:00.000Z'));
+    findAllByUserIdAndDateMock.mockResolvedValueOnce([existingReminder]);
+
+    try {
+      await getReminders('user-1');
+
+      expect(findAllByUserIdAndDateMock).toHaveBeenCalledWith(
+        'user-1',
+        new Date('2026-07-16T00:00:00.000Z')
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('gets a reminder by id and user id', async () => {
+    findByIdAndUserIdMock.mockResolvedValueOnce(existingReminder);
+
+    const reminder = await getReminderById('reminder-1', 'user-1');
+
+    expect(reminder).toBe(existingReminder);
+    expect(findByIdAndUserIdMock).toHaveBeenCalledWith('reminder-1', 'user-1');
+  });
+
+  it('rejects getting a reminder when it does not exist or is not owned by the user', async () => {
+    findByIdAndUserIdMock.mockResolvedValueOnce(null);
+
+    await expect(getReminderById('reminder-1', 'user-1')).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'REMINDER_NOT_FOUND'
+    });
+  });
+
+  it('merges existing and requested values when updating a reminder', async () => {
+    findByIdAndUserIdMock.mockResolvedValueOnce(existingReminder);
+    updateMock.mockImplementationOnce(async (_id, _userId, payload) => ({
+      ...existingReminder,
+      ...payload,
+      updatedAt: new Date('2026-07-15T01:00:00.000Z')
+    }));
+
+    await updateReminder('reminder-1', 'user-1', {
+      title: 'updated focus'
+    });
+
+    expect(existsOverlappingReminderMock).toHaveBeenCalledWith(
+      'user-1',
+      existingReminder.date,
+      existingReminder.startTime,
+      existingReminder.endTime,
+      'reminder-1'
+    );
+    expect(updateMock).toHaveBeenCalledWith(
+      'reminder-1',
+      'user-1',
+      expect.objectContaining({
+        title: 'updated focus',
+        restrictedAppIds: []
+      })
+    );
+  });
+
+  it('checks ownership before deleting a reminder', async () => {
+    findByIdAndUserIdMock.mockResolvedValueOnce(existingReminder);
+    deleteByIdAndUserIdMock.mockResolvedValueOnce(undefined);
+
+    await deleteReminder('reminder-1', 'user-1');
+
+    expect(findByIdAndUserIdMock).toHaveBeenCalledWith('reminder-1', 'user-1');
+    expect(deleteByIdAndUserIdMock).toHaveBeenCalledWith('reminder-1', 'user-1');
+  });
+
+  it('rejects deleting a reminder when it does not exist or is not owned by the user', async () => {
+    findByIdAndUserIdMock.mockResolvedValueOnce(null);
+
+    await expect(deleteReminder('reminder-1', 'user-1')).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'REMINDER_NOT_FOUND'
+    });
+    expect(deleteByIdAndUserIdMock).not.toHaveBeenCalled();
   });
 });
