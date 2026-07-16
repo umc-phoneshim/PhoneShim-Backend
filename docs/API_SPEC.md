@@ -1066,7 +1066,7 @@
 
 #### 이벤트명
 
-후속 Socket.IO 구현 시 다음 이벤트명을 사용합니다.
+Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 
 | 이벤트명 | 발생 시점 |
 |---|---|
@@ -1076,38 +1076,13 @@
 
 #### 이벤트 Payload
 
-생성/수정 이벤트 payload는 다음 형식을 사용합니다.
+생성/수정/삭제 이벤트 payload는 다음 형식을 사용합니다.
 
 ```json
 {
   "event": "reminder.created",
   "reason": "today-reminder-changed",
-  "requiresRefetch": true,
-  "reminder": {
-    "id": "uuid",
-    "userId": "uuid",
-    "date": "2026-07-16T00:00:00.000Z",
-    "title": "postman test",
-    "startTime": "2026-07-16T12:00:00.000Z",
-    "endTime": "2026-07-16T13:00:00.000Z",
-    "restrictMode": "NONE",
-    "restrictedAppIds": [],
-    "createdAt": "2026-07-16T08:12:17.761Z",
-    "updatedAt": "2026-07-16T08:12:17.761Z"
-  }
-}
-```
-
-삭제 이벤트 payload는 다음 형식을 사용합니다.
-
-```json
-{
-  "event": "reminder.deleted",
-  "reason": "today-reminder-changed",
-  "requiresRefetch": true,
-  "reminderId": "uuid",
-  "userId": "uuid",
-  "date": "2026-07-16T00:00:00.000Z"
+  "requiresRefetch": true
 }
 ```
 
@@ -1116,10 +1091,6 @@
 | event | 이벤트명 |
 | reason | 클라이언트가 갱신 목적을 구분하기 위한 문자열. 기본값 `today-reminder-changed` |
 | requiresRefetch | `true`이면 클라이언트는 오늘 할 일 목록을 재조회합니다. 기본 계약은 `true`입니다. |
-| reminder | 생성/수정된 리마인더 데이터 |
-| reminderId | 삭제된 리마인더 ID |
-| userId | 사용자 식별자 |
-| date | 변경 영향이 있는 날짜 |
 
 #### 재접속 및 누락 이벤트 대응
 
