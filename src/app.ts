@@ -10,6 +10,7 @@ import reminderRouter from './domains/reminder/interfaces/reminderRouter';
 import timerRouter from './domains/timer/interfaces/timerRouter';
 import userRouter from './domains/user/interfaces/userRouter';
 import usageLogRouter from './domains/usageLog/interfaces/usageLogRouter';
+import usageReasonRouter from './domains/usageReason/interfaces/usageReasonRouter';
 import errorHandler from './shared/middlewares/errorHandler';
 import notFoundHandler from './shared/middlewares/notFoundHandler';
 import { swaggerSpec } from './shared/swagger/swaggerConfig';
@@ -51,6 +52,7 @@ app.use('/api/users', userRouter);
 app.use('/api/monitored-apps', monitoredAppRouter);
 app.use('/api/app-goals', appGoalRouter);
 app.use('/api/usage-logs', usageLogRouter);
+app.use('/api/usage-reasons', usageReasonRouter);
 app.use('/api/reminders', reminderRouter);
 app.use('/api/dashboard', dashboardRouter);
 
