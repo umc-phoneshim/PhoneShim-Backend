@@ -99,11 +99,11 @@
 | AppGoal | POST | `/api/app-goals` | 앱별 목표 생성/설정 | 예정 |
 | AppGoal | GET | `/api/app-goals?monitoredAppId=` | 앱별 목표 조회 | 예정 |
 | AppGoal | PATCH | `/api/app-goals/:id` | 앱별 목표 수정 | 예정 |
-| Reminder | POST | `/api/reminders` | 할 일 생성 | 예정 |
-| Reminder | GET | `/api/reminders?date=` | 날짜별 할 일 목록 조회 | 예정 |
-| Reminder | GET | `/api/reminders/:id` | 할 일 단건 조회 | 예정 |
-| Reminder | PATCH | `/api/reminders/:id` | 할 일 수정 | 예정 |
-| Reminder | DELETE | `/api/reminders/:id` | 할 일 삭제 | 예정 |
+| Reminder | POST | `/api/reminders` | 할 일 생성 | 구현됨 |
+| Reminder | GET | `/api/reminders?date=` | 날짜별 할 일 목록 조회 | 구현됨 |
+| Reminder | GET | `/api/reminders/:id` | 할 일 단건 조회 | 구현됨 |
+| Reminder | PATCH | `/api/reminders/:id` | 할 일 수정 | 구현됨 |
+| Reminder | DELETE | `/api/reminders/:id` | 할 일 삭제 | 구현됨 |
 | UsageLog | GET | `/api/usage-logs?date=` | 일별 주의 앱 사용량 조회 | 예정 |
 | UsageReason | POST | `/api/usage-reasons` | 사용 사유 입력 | 예정 |
 | UsageReason | GET | `/api/usage-reasons/calendar?month=` | 날짜별 사유 입력 여부 조회 | 예정 |
@@ -988,6 +988,59 @@
 - `restrictMode`는 `NONE`, `FULL_PHONE`, `SPECIFIC_APP`만 허용합니다.
 - `SPECIFIC_APP`은 사용자가 사전에 등록한 본인 소유 주의 앱만 제한 대상으로 지정할 수 있습니다.
 - `NONE`, `FULL_PHONE` 모드에서는 전달된 `restrictedAppIds`가 저장되지 않고 빈 배열로 정리됩니다.
+
+### Restriction Execution Contract
+
+리마인더의 제한 실행은 백엔드와 클라이언트 스크린타임 엔진이 역할을 나누어 처리합니다.
+
+#### 책임 범위
+
+| 구분 | 책임 |
+|---|---|
+| 백엔드 | 리마인더 CRUD, 시간/중복/제한 앱 소유권 검증, 제한 정책 데이터 제공 |
+| 클라이언트 | 일정 시작/종료 시각 감지, 스크린타임 엔진 실행, 앱 차단 화면 노출, 제한 해제 |
+
+백엔드는 실제 스마트폰 잠금 또는 앱 차단을 직접 수행하지 않습니다.
+
+#### 제한 정책 데이터
+
+클라이언트는 Reminder API 응답의 다음 필드를 제한 실행 계약으로 사용합니다.
+
+| 필드 | 설명 |
+|---|---|
+| id | 제한 예약 작업을 식별하기 위한 리마인더 ID |
+| userId | 사용자 식별자 |
+| date | 일정 날짜 |
+| startTime | 제한 시작 시각 |
+| endTime | 제한 종료 시각 |
+| restrictMode | 제한 모드. `NONE`, `FULL_PHONE`, `SPECIFIC_APP` |
+| restrictedAppIds | `SPECIFIC_APP`에서 제한할 주의 앱 ID 목록 |
+
+모드별 실행 기준은 다음과 같습니다.
+
+| restrictMode | 실행 기준 |
+|---|---|
+| `NONE` | 제한 실행 없음 |
+| `FULL_PHONE` | `startTime`부터 `endTime`까지 필수 앱을 제외한 앱 실행을 전면 제한 |
+| `SPECIFIC_APP` | `restrictedAppIds`에 포함된 주의 앱 진입 시 차단 화면 노출 |
+
+`SPECIFIC_APP`에서 실제 앱 차단에 패키지명이 필요한 경우, 클라이언트는 `restrictedAppIds`를 기준으로 주의 앱 API를 조회해 패키지명을 해석합니다.
+
+#### 시작/종료 및 과거 일정 기준
+
+- 제한 실행 대상은 현재 시각 이후에 도래하는 일정입니다.
+- 과거 일정은 조회와 수정은 가능하지만 제한 실행 대상에서 제외합니다.
+- 일정 시작 시점에 클라이언트는 `restrictMode`에 따라 제한을 적용합니다.
+- 일정 종료 시점에 클라이언트는 해당 리마인더로 인해 적용한 제한을 해제합니다.
+- 같은 사용자, 같은 날짜의 리마인더 시간대는 중복 저장될 수 없으므로, 동시에 활성화되는 리마인더는 없다는 전제를 둡니다.
+
+#### 수정/삭제 시 갱신 기준
+
+- 리마인더가 생성되면 클라이언트는 해당 날짜의 리마인더 목록을 재조회하거나 신규 제한 예약을 등록합니다.
+- 리마인더가 수정되면 클라이언트는 기존 예약을 취소하고 최신 응답 데이터 기준으로 다시 예약합니다.
+- 리마인더가 삭제되면 클라이언트는 해당 리마인더의 예약 작업을 취소합니다.
+- 삭제된 리마인더가 현재 제한 실행 중이었다면 클라이언트는 해당 리마인더로 적용한 제한을 해제합니다.
+- 백엔드 이벤트 기반 동기화가 추가되기 전까지는 API 응답 후 클라이언트 재조회 또는 로컬 캐시 갱신을 기본 방식으로 사용합니다.
 
 ### POST `/api/reminders`
 
