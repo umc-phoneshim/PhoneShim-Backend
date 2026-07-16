@@ -55,4 +55,64 @@ describe('createReminderEntity', () => {
       'title must be 20 characters or fewer'
     );
   });
+
+  it('rejects a blank title', () => {
+    expect(() =>
+      createReminderEntity({
+        userId: 'user-1',
+        date: '2026-07-16',
+        title: '   ',
+        startTime: '2026-07-16T09:00:00.000Z',
+        endTime: '2026-07-16T10:00:00.000Z'
+      })
+    ).toThrow('title is required');
+  });
+
+  it('rejects an invalid start time', () => {
+    expect(() =>
+      createReminderEntity({
+        userId: 'user-1',
+        date: '2026-07-16',
+        title: '독서',
+        startTime: '',
+        endTime: '2026-07-16T10:00:00.000Z'
+      })
+    ).toThrow('startTime must be a valid ISO string');
+  });
+
+  it('rejects an invalid end time', () => {
+    expect(() =>
+      createReminderEntity({
+        userId: 'user-1',
+        date: '2026-07-16',
+        title: '독서',
+        startTime: '2026-07-16T09:00:00.000Z',
+        endTime: ''
+      })
+    ).toThrow('endTime must be a valid ISO string');
+  });
+
+  it('rejects a reminder shorter than one minute', () => {
+    expect(() =>
+      createReminderEntity({
+        userId: 'user-1',
+        date: '2026-07-16',
+        title: '독서',
+        startTime: '2026-07-16T09:00:00.000Z',
+        endTime: '2026-07-16T09:00:59.999Z'
+      })
+    ).toThrow('Invalid reminder time range');
+  });
+
+  it('rejects a time range whose end is before its start', () => {
+    expect(() =>
+      createReminderEntity({
+        userId: 'user-1',
+        date: '2026-07-16',
+        title: '독서',
+        startTime: '2026-07-16T10:00:00.000Z',
+        endTime: '2026-07-16T09:00:00.000Z'
+      })
+    ).toThrow('Invalid reminder time range');
+  });
 });
