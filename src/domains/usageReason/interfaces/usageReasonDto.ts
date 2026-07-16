@@ -1,0 +1,39 @@
+export type CreateUsageReasonRequest = {
+  monitoredAppId: string;
+  usageLogId?: string;
+  date: string;
+  timeRangeStart: string;
+  timeRangeEnd: string;
+  reason: string;
+};
+
+export const createUsageReasonRequestSchema = {
+  monitoredAppId: {
+    type: 'string',
+    required: true,
+    minLength: 1
+  },
+  usageLogId: {
+    type: 'string'
+  },
+  date: {
+    type: 'string',
+    required: true,
+    minLength: 1
+  },
+  timeRangeStart: {
+    type: 'string',
+    required: true,
+    minLength: 1
+  },
+  timeRangeEnd: {
+    type: 'string',
+    required: true,
+    minLength: 1
+  },
+  reason: {
+    type: 'string',
+    required: true,
+    minLength: 1
+  }
+} as const;
