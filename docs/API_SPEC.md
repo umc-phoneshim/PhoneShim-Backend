@@ -967,35 +967,57 @@
 
 ## 12. Reminder
 
-기능명세서 `REM102`~`REM109`, `MAIN105`, 정책 `REM-01`~`REM-06`에 해당합니다.
+기능명세서 `REM101`~`REM109`, 서비스 정책 `REM-01`~`REM-10`에 해당합니다.
 
-공통 정책:
+### Common Rules
 
-- 인증 필요
-- 과거 날짜 일정도 조회/수정 가능하지만 과거 제한 정책은 동작하지 않습니다.
-- 같은 사용자/같은 날짜 안에서 일정 시간대는 서로 중복될 수 없습니다.
-- 일정은 최소 1분 이상이어야 합니다.
-- `SPECIFIC_APP` 제한은 등록된 주의 앱만 선택할 수 있습니다.
+- 인증이 필요합니다. `Authorization: Bearer <accessToken>`
+- `date`는 `YYYY-MM-DD` 형식이며, 실제 존재하는 캘린더 날짜만 허용합니다.
+- `startTime`, `endTime`은 timezone을 포함한 ISO datetime string만 허용합니다.
+  - 허용 예: `2026-07-16T09:00:00.000Z`
+  - 허용 예: `2026-07-16T09:00:00+09:00`
+  - 거부 예: `2026-07-16T09:00:00`
+- `startTime`, `endTime`은 KST 기준으로 `date`와 같은 날짜여야 합니다.
+  - 예: `date=2026-07-16`, `startTime=2026-07-15T15:00:00.000Z`는 KST 기준 2026-07-16 00:00이므로 허용합니다.
+  - 예: `date=2026-07-16`, `startTime=2026-07-16T15:00:00.000Z`는 KST 기준 2026-07-17 00:00이므로 거부합니다.
+- `title`은 공백 포함 최대 20자입니다. 빈 문자열 또는 공백만 있는 값은 거부합니다.
+- 하나의 일정은 최소 1분 이상이어야 합니다.
+- 같은 사용자, 같은 날짜 안에서는 일정 시간대가 서로 중복될 수 없습니다.
+- 경계 시간이 맞닿는 일정은 중복으로 보지 않습니다.
+  - 예: `12:00~13:00`, `13:00~14:00`은 허용합니다.
+- `restrictMode`는 `NONE`, `FULL_PHONE`, `SPECIFIC_APP`만 허용합니다.
+- `SPECIFIC_APP`은 사용자가 사전에 등록한 본인 소유 주의 앱만 제한 대상으로 지정할 수 있습니다.
+- `NONE`, `FULL_PHONE` 모드에서는 전달된 `restrictedAppIds`가 저장되지 않고 빈 배열로 정리됩니다.
 
 ### POST `/api/reminders`
 
 할 일을 생성합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현됨
 
 #### Request Body
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
 | date | string | Y | 일정 날짜. `YYYY-MM-DD` 형식의 실제 존재 날짜 |
-| title | string | Y | 일정 이름 |
-| startTime | string | Y | 시작 시각. timezone을 포함한 ISO datetime string. 예: `2026-07-07T09:00:00.000Z` |
-| endTime | string | Y | 종료 시각. timezone을 포함한 ISO datetime string. 예: `2026-07-07T10:00:00.000Z` |
+| title | string | Y | 일정 이름. 공백 포함 최대 20자 |
+| startTime | string | Y | 시작 시각. timezone을 포함한 ISO datetime string |
+| endTime | string | Y | 종료 시각. timezone을 포함한 ISO datetime string |
 | restrictMode | string | N | `NONE`, `FULL_PHONE`, `SPECIFIC_APP`. 기본값 `NONE` |
 | restrictedAppIds | string[] | N | `SPECIFIC_APP`일 때 제한할 주의 앱 ID 목록 |
 
-- `startTime`, `endTime`은 KST 기준으로 `date`와 같은 날짜여야 합니다.
+#### Request Example
+
+```json
+{
+  "date": "2026-07-16",
+  "title": "postman test",
+  "startTime": "2026-07-16T12:00:00.000Z",
+  "endTime": "2026-07-16T13:00:00.000Z",
+  "restrictMode": "NONE"
+}
+```
 
 #### Response 201
 
@@ -1005,14 +1027,14 @@
   "data": {
     "id": "uuid",
     "userId": "uuid",
-    "date": "2026-07-07",
-    "title": "운동",
-    "startTime": "2026-07-07T09:00:00.000Z",
-    "endTime": "2026-07-07T10:00:00.000Z",
-    "restrictMode": "SPECIFIC_APP",
-    "restrictedAppIds": ["uuid"],
-    "createdAt": "2026-07-07T00:00:00.000Z",
-    "updatedAt": "2026-07-07T00:00:00.000Z"
+    "date": "2026-07-16T00:00:00.000Z",
+    "title": "postman test",
+    "startTime": "2026-07-16T12:00:00.000Z",
+    "endTime": "2026-07-16T13:00:00.000Z",
+    "restrictMode": "NONE",
+    "restrictedAppIds": [],
+    "createdAt": "2026-07-16T08:12:17.761Z",
+    "updatedAt": "2026-07-16T08:12:17.761Z"
   }
 }
 ```
@@ -1021,10 +1043,10 @@
 
 | Status | Code | 설명 |
 |---|---|---|
-| 400 | VALIDATION_ERROR | 필수값 누락 |
-| 400 | INVALID_TIME_RANGE | 종료 시각이 시작 시각보다 빠르거나 일정이 1분 미만 |
-| 400 | INVALID_RESTRICT_MODE | 제한 모드가 올바르지 않음 |
-| 400 | INVALID_RESTRICTED_APP_IDS | 특정 앱 제한인데 제한 앱이 없거나 유효하지 않음 |
+| 400 | VALIDATION_ERROR | 필수값 누락, 빈 문자열, 제목 20자 초과, 날짜/시간 형식 오류 |
+| 400 | INVALID_TIME_RANGE | 종료 시각이 시작 시각보다 빠르거나, 일정이 1분 미만이거나, KST 기준 날짜가 `date`와 다름 |
+| 400 | INVALID_RESTRICT_MODE | 제한 모드가 `NONE`, `FULL_PHONE`, `SPECIFIC_APP` 중 하나가 아님 |
+| 400 | INVALID_RESTRICTED_APP_IDS | `SPECIFIC_APP`인데 제한 앱 목록이 없거나, 본인 소유 주의 앱이 아님 |
 | 409 | REMINDER_TIME_OVERLAP | 같은 날짜에 겹치는 일정이 있음 |
 
 ### GET `/api/reminders?date=YYYY-MM-DD`
@@ -1032,9 +1054,15 @@
 날짜별 할 일 목록을 조회합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현됨
 - `date`가 없으면 KST 기준 오늘 날짜를 기본값으로 사용합니다.
 - 정렬: `startTime asc`, `endTime asc`, `createdAt asc`
+
+#### Query Parameters
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| date | string | N | 조회 날짜. `YYYY-MM-DD` 형식의 실제 존재 날짜 |
 
 #### Response 200
 
@@ -1045,25 +1073,32 @@
     {
       "id": "uuid",
       "userId": "uuid",
-      "date": "2026-07-07",
-      "title": "운동",
-      "startTime": "2026-07-07T09:00:00.000Z",
-      "endTime": "2026-07-07T10:00:00.000Z",
-      "restrictMode": "SPECIFIC_APP",
-      "restrictedAppIds": ["uuid"],
-      "createdAt": "2026-07-07T00:00:00.000Z",
-      "updatedAt": "2026-07-07T00:00:00.000Z"
+      "date": "2026-07-16T00:00:00.000Z",
+      "title": "postman test",
+      "startTime": "2026-07-16T12:00:00.000Z",
+      "endTime": "2026-07-16T13:00:00.000Z",
+      "restrictMode": "NONE",
+      "restrictedAppIds": [],
+      "createdAt": "2026-07-16T08:12:17.761Z",
+      "updatedAt": "2026-07-16T08:12:17.761Z"
     }
   ]
 }
 ```
+
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
+| 400 | VALIDATION_ERROR | `date` 형식이 `YYYY-MM-DD`가 아니거나 실제 존재하지 않는 날짜 |
 
 ### GET `/api/reminders/:id`
 
 할 일 단건을 조회합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현됨
+- 본인 소유 할 일만 조회할 수 있습니다.
 
 #### Response 200
 
@@ -1073,14 +1108,14 @@
   "data": {
     "id": "uuid",
     "userId": "uuid",
-    "date": "2026-07-07",
-    "title": "운동",
-    "startTime": "2026-07-07T09:00:00.000Z",
-    "endTime": "2026-07-07T10:00:00.000Z",
-    "restrictMode": "SPECIFIC_APP",
-    "restrictedAppIds": ["uuid"],
-    "createdAt": "2026-07-07T00:00:00.000Z",
-    "updatedAt": "2026-07-07T00:00:00.000Z"
+    "date": "2026-07-16T00:00:00.000Z",
+    "title": "postman test",
+    "startTime": "2026-07-16T12:00:00.000Z",
+    "endTime": "2026-07-16T13:00:00.000Z",
+    "restrictMode": "NONE",
+    "restrictedAppIds": [],
+    "createdAt": "2026-07-16T08:12:17.761Z",
+    "updatedAt": "2026-07-16T08:12:17.761Z"
   }
 }
 ```
@@ -1089,30 +1124,39 @@
 
 | Status | Code | 설명 |
 |---|---|---|
-| 404 | REMINDER_NOT_FOUND | 일정이 없거나 본인 소유가 아님 |
+| 404 | REMINDER_NOT_FOUND | 할 일이 없거나 본인 소유가 아님 |
 
 ### PATCH `/api/reminders/:id`
 
 할 일을 수정합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현됨
 - 요청 body는 `POST /api/reminders`와 동일한 필드를 부분적으로 허용합니다.
+- 최소 1개 이상의 수정 가능한 필드가 필요합니다.
+- 요청하지 않은 필드는 기존 값을 유지한 뒤 전체 정책을 다시 검증합니다.
 - `restrictedAppIds`가 전달되면 기존 제한 앱 목록을 전체 교체합니다.
-- `restrictMode`를 `NONE` 또는 `FULL_PHONE`으로 변경하면 `restrictedAppIds`는 빈 배열로 저장합니다.
+- `restrictMode`를 `NONE` 또는 `FULL_PHONE`으로 변경하면 `restrictedAppIds`는 빈 배열로 저장됩니다.
+- `restrictMode`가 `SPECIFIC_APP`인 경우, 기존 또는 요청으로 확정된 `restrictedAppIds`가 1개 이상 있어야 합니다.
 
 #### Request Body
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
 | date | string | N | 일정 날짜. `YYYY-MM-DD` 형식의 실제 존재 날짜 |
-| title | string | N | 일정 이름 |
-| startTime | string | N | 시작 시각. timezone을 포함한 ISO datetime string. 예: `2026-07-07T09:00:00.000Z` |
-| endTime | string | N | 종료 시각. timezone을 포함한 ISO datetime string. 예: `2026-07-07T10:00:00.000Z` |
+| title | string | N | 일정 이름. 공백 포함 최대 20자 |
+| startTime | string | N | 시작 시각. timezone을 포함한 ISO datetime string |
+| endTime | string | N | 종료 시각. timezone을 포함한 ISO datetime string |
 | restrictMode | string | N | `NONE`, `FULL_PHONE`, `SPECIFIC_APP` |
 | restrictedAppIds | string[] | N | `SPECIFIC_APP`일 때 제한할 주의 앱 ID 목록 |
 
-- `startTime`, `endTime`을 변경하는 경우 KST 기준으로 적용되는 `date`와 같은 날짜여야 합니다.
+#### Request Example
+
+```json
+{
+  "title": "updated postman"
+}
+```
 
 #### Response 200
 
@@ -1122,14 +1166,14 @@
   "data": {
     "id": "uuid",
     "userId": "uuid",
-    "date": "2026-07-07",
-    "title": "독서",
-    "startTime": "2026-07-07T20:00:00.000Z",
-    "endTime": "2026-07-07T21:00:00.000Z",
-    "restrictMode": "FULL_PHONE",
+    "date": "2026-07-16T00:00:00.000Z",
+    "title": "updated postman",
+    "startTime": "2026-07-16T12:00:00.000Z",
+    "endTime": "2026-07-16T13:00:00.000Z",
+    "restrictMode": "NONE",
     "restrictedAppIds": [],
-    "createdAt": "2026-07-07T00:00:00.000Z",
-    "updatedAt": "2026-07-07T01:00:00.000Z"
+    "createdAt": "2026-07-16T08:12:17.761Z",
+    "updatedAt": "2026-07-16T08:15:35.208Z"
   }
 }
 ```
@@ -1138,11 +1182,11 @@
 
 | Status | Code | 설명 |
 |---|---|---|
-| 400 | VALIDATION_ERROR | 수정 가능한 필드가 하나도 없음 |
-| 400 | INVALID_TIME_RANGE | 종료 시각이 시작 시각보다 빠르거나 일정이 1분 미만 |
-| 400 | INVALID_RESTRICT_MODE | 제한 모드가 올바르지 않음 |
-| 400 | INVALID_RESTRICTED_APP_IDS | 특정 앱 제한인데 제한 앱이 없거나 유효하지 않음 |
-| 404 | REMINDER_NOT_FOUND | 일정이 없거나 본인 소유가 아님 |
+| 400 | VALIDATION_ERROR | 수정 가능한 필드가 없거나, 빈 문자열, 제목 20자 초과, 날짜/시간 형식 오류 |
+| 400 | INVALID_TIME_RANGE | 종료 시각이 시작 시각보다 빠르거나, 일정이 1분 미만이거나, KST 기준 날짜가 `date`와 다름 |
+| 400 | INVALID_RESTRICT_MODE | 제한 모드가 `NONE`, `FULL_PHONE`, `SPECIFIC_APP` 중 하나가 아님 |
+| 400 | INVALID_RESTRICTED_APP_IDS | `SPECIFIC_APP`인데 제한 앱 목록이 없거나, 본인 소유 주의 앱이 아님 |
+| 404 | REMINDER_NOT_FOUND | 할 일이 없거나 본인 소유가 아님 |
 | 409 | REMINDER_TIME_OVERLAP | 같은 날짜에 겹치는 일정이 있음 |
 
 ### DELETE `/api/reminders/:id`
@@ -1150,11 +1194,18 @@
 할 일을 삭제합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현됨
+- 본인 소유 할 일만 삭제할 수 있습니다.
 
 #### Response 204
 
 응답 body 없음.
+
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
+| 404 | REMINDER_NOT_FOUND | 할 일이 없거나 본인 소유가 아님 |
 
 ## 13. UsageLog / UsageReason
 
