@@ -55,6 +55,8 @@ export type ValidatedReminderUpdate = {
 
 const VALID_RESTRICT_MODES = new Set<string>(Object.values(RestrictMode));
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const ISO_DATE_TIME_PATTERN =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z|[+-]\d{2}:\d{2})$/;
 const MIN_REMINDER_DURATION_MS = 60 * 1000;
 const MAX_TITLE_LENGTH = 20;
 const KST_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
@@ -90,7 +92,13 @@ export const parseDateOnly = (value: string): Date => {
     throw new BadRequestError('date must be YYYY-MM-DD', 'VALIDATION_ERROR');
   }
 
-  return new Date(`${value}T00:00:00.000Z`);
+  const date = new Date(`${value}T00:00:00.000Z`);
+
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    throw new BadRequestError('date must be a valid calendar date', 'VALIDATION_ERROR');
+  }
+
+  return date;
 };
 
 export const toKstDateString = (date: Date): string => {
@@ -98,6 +106,10 @@ export const toKstDateString = (date: Date): string => {
 };
 
 const parseIsoDateTime = (value: string, fieldName: string): Date => {
+  if (!ISO_DATE_TIME_PATTERN.test(value)) {
+    throw new BadRequestError(`${fieldName} must be an ISO datetime with timezone`, 'VALIDATION_ERROR');
+  }
+
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
