@@ -77,7 +77,55 @@ describe('createReminderEntity', () => {
         startTime: '',
         endTime: '2026-07-16T10:00:00.000Z'
       })
-    ).toThrow('startTime must be a valid ISO string');
+    ).toThrow('startTime must be an ISO datetime with timezone');
+  });
+
+  it('rejects a date that is not YYYY-MM-DD', () => {
+    expect(() =>
+      createReminderEntity({
+        userId: 'user-1',
+        date: '2026/07/16',
+        title: '공부',
+        startTime: '2026-07-16T09:00:00.000Z',
+        endTime: '2026-07-16T10:00:00.000Z'
+      })
+    ).toThrow('date must be YYYY-MM-DD');
+  });
+
+  it('rejects a nonexistent calendar date', () => {
+    expect(() =>
+      createReminderEntity({
+        userId: 'user-1',
+        date: '2026-02-31',
+        title: '공부',
+        startTime: '2026-02-28T09:00:00.000Z',
+        endTime: '2026-02-28T10:00:00.000Z'
+      })
+    ).toThrow('date must be a valid calendar date');
+  });
+
+  it('rejects a datetime without timezone', () => {
+    expect(() =>
+      createReminderEntity({
+        userId: 'user-1',
+        date: '2026-07-16',
+        title: '공부',
+        startTime: '2026-07-16T09:00:00',
+        endTime: '2026-07-16T10:00:00.000Z'
+      })
+    ).toThrow('startTime must be an ISO datetime with timezone');
+  });
+
+  it('rejects times that do not match the selected KST date', () => {
+    expect(() =>
+      createReminderEntity({
+        userId: 'user-1',
+        date: '2026-07-16',
+        title: '공부',
+        startTime: '2026-07-15T14:59:00.000Z',
+        endTime: '2026-07-15T15:30:00.000Z'
+      })
+    ).toThrow('startTime and endTime must match date');
   });
 
   it('rejects an invalid end time', () => {
@@ -89,7 +137,7 @@ describe('createReminderEntity', () => {
         startTime: '2026-07-16T09:00:00.000Z',
         endTime: ''
       })
-    ).toThrow('endTime must be a valid ISO string');
+    ).toThrow('endTime must be an ISO datetime with timezone');
   });
 
   it('rejects a reminder shorter than one minute', () => {

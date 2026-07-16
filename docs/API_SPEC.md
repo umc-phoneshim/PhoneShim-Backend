@@ -988,12 +988,14 @@
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| date | string | Y | 일정 날짜. `YYYY-MM-DD` |
+| date | string | Y | 일정 날짜. `YYYY-MM-DD` 형식의 실제 존재 날짜 |
 | title | string | Y | 일정 이름 |
-| startTime | string | Y | 시작 시각 ISO string |
-| endTime | string | Y | 종료 시각 ISO string |
+| startTime | string | Y | 시작 시각. timezone을 포함한 ISO datetime string. 예: `2026-07-07T09:00:00.000Z` |
+| endTime | string | Y | 종료 시각. timezone을 포함한 ISO datetime string. 예: `2026-07-07T10:00:00.000Z` |
 | restrictMode | string | N | `NONE`, `FULL_PHONE`, `SPECIFIC_APP`. 기본값 `NONE` |
 | restrictedAppIds | string[] | N | `SPECIFIC_APP`일 때 제한할 주의 앱 ID 목록 |
+
+- `startTime`, `endTime`은 KST 기준으로 `date`와 같은 날짜여야 합니다.
 
 #### Response 201
 
@@ -1103,12 +1105,14 @@
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| date | string | N | 일정 날짜. `YYYY-MM-DD` |
+| date | string | N | 일정 날짜. `YYYY-MM-DD` 형식의 실제 존재 날짜 |
 | title | string | N | 일정 이름 |
-| startTime | string | N | 시작 시각 ISO string |
-| endTime | string | N | 종료 시각 ISO string |
+| startTime | string | N | 시작 시각. timezone을 포함한 ISO datetime string. 예: `2026-07-07T09:00:00.000Z` |
+| endTime | string | N | 종료 시각. timezone을 포함한 ISO datetime string. 예: `2026-07-07T10:00:00.000Z` |
 | restrictMode | string | N | `NONE`, `FULL_PHONE`, `SPECIFIC_APP` |
 | restrictedAppIds | string[] | N | `SPECIFIC_APP`일 때 제한할 주의 앱 ID 목록 |
+
+- `startTime`, `endTime`을 변경하는 경우 KST 기준으로 적용되는 `date`와 같은 날짜여야 합니다.
 
 #### Response 200
 
