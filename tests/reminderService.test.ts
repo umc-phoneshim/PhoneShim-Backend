@@ -131,4 +131,96 @@ describe('reminderService overlap validation', () => {
     );
     expect(updateMock).not.toHaveBeenCalled();
   });
+
+  it('rejects creating a SPECIFIC_APP reminder with app ids the user does not own', async () => {
+    countOwnedMonitoredAppsMock.mockResolvedValueOnce(1);
+
+    await expect(
+      createReminder({
+        userId: 'user-1',
+        date: '2026-07-16',
+        title: 'study',
+        startTime: '2026-07-16T09:00:00.000Z',
+        endTime: '2026-07-16T10:00:00.000Z',
+        restrictMode: RestrictMode.SPECIFIC_APP,
+        restrictedAppIds: ['app-1', 'other-user-app']
+      })
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      code: 'INVALID_RESTRICTED_APP_IDS'
+    });
+
+    expect(existsOverlappingReminderMock).not.toHaveBeenCalled();
+    expect(saveMock).not.toHaveBeenCalled();
+  });
+
+  it('creates a SPECIFIC_APP reminder with app ids owned by the user', async () => {
+    countOwnedMonitoredAppsMock.mockResolvedValueOnce(2);
+    existsOverlappingReminderMock.mockResolvedValueOnce(false);
+    saveMock.mockImplementationOnce(async (reminder) => ({
+      ...reminder,
+      id: 'reminder-4',
+      createdAt: new Date('2026-07-15T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-15T00:00:00.000Z')
+    }));
+
+    await createReminder({
+      userId: 'user-1',
+      date: '2026-07-16',
+      title: 'study',
+      startTime: '2026-07-16T09:00:00.000Z',
+      endTime: '2026-07-16T10:00:00.000Z',
+      restrictMode: RestrictMode.SPECIFIC_APP,
+      restrictedAppIds: ['app-1', 'app-2']
+    });
+
+    expect(countOwnedMonitoredAppsMock).toHaveBeenCalledWith('user-1', ['app-1', 'app-2']);
+    expect(saveMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears restricted app ids when updating to FULL_PHONE mode', async () => {
+    findByIdAndUserIdMock.mockResolvedValueOnce({
+      ...existingReminder,
+      restrictMode: RestrictMode.SPECIFIC_APP,
+      restrictedAppIds: ['app-1']
+    });
+    existsOverlappingReminderMock.mockResolvedValueOnce(false);
+    updateMock.mockImplementationOnce(async (_id, _userId, payload) => ({
+      ...existingReminder,
+      ...payload,
+      restrictMode: payload.restrictMode ?? existingReminder.restrictMode,
+      restrictedAppIds: payload.restrictedAppIds ?? existingReminder.restrictedAppIds,
+      updatedAt: new Date('2026-07-15T01:00:00.000Z')
+    }));
+
+    await updateReminder('reminder-1', 'user-1', {
+      restrictMode: RestrictMode.FULL_PHONE
+    });
+
+    expect(updateMock).toHaveBeenCalledWith(
+      'reminder-1',
+      'user-1',
+      expect.objectContaining({
+        restrictMode: RestrictMode.FULL_PHONE,
+        restrictedAppIds: []
+      })
+    );
+  });
+
+  it('rejects updating to SPECIFIC_APP mode with app ids the user does not own', async () => {
+    findByIdAndUserIdMock.mockResolvedValueOnce(existingReminder);
+    countOwnedMonitoredAppsMock.mockResolvedValueOnce(0);
+
+    await expect(
+      updateReminder('reminder-1', 'user-1', {
+        restrictMode: RestrictMode.SPECIFIC_APP,
+        restrictedAppIds: ['other-user-app']
+      })
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      code: 'INVALID_RESTRICTED_APP_IDS'
+    });
+
+    expect(updateMock).not.toHaveBeenCalled();
+  });
 });

@@ -163,4 +163,59 @@ describe('createReminderEntity', () => {
       })
     ).toThrow('Invalid reminder time range');
   });
+
+  it('rejects SPECIFIC_APP mode without restricted app ids', () => {
+    expect(() =>
+      createReminderEntity({
+        userId: 'user-1',
+        date: '2026-07-16',
+        title: 'focus',
+        startTime: '2026-07-16T09:00:00.000Z',
+        endTime: '2026-07-16T10:00:00.000Z',
+        restrictMode: RestrictMode.SPECIFIC_APP
+      })
+    ).toThrow('SPECIFIC_APP requires restrictedAppIds');
+  });
+
+  it('keeps restricted app ids only for SPECIFIC_APP mode', () => {
+    const reminder = createReminderEntity({
+      userId: 'user-1',
+      date: '2026-07-16',
+      title: 'focus',
+      startTime: '2026-07-16T09:00:00.000Z',
+      endTime: '2026-07-16T10:00:00.000Z',
+      restrictMode: RestrictMode.SPECIFIC_APP,
+      restrictedAppIds: ['app-1', 'app-1', 'app-2']
+    });
+
+    expect(reminder.restrictedAppIds).toEqual(['app-1', 'app-2']);
+  });
+
+  it('clears restricted app ids for NONE mode', () => {
+    const reminder = createReminderEntity({
+      userId: 'user-1',
+      date: '2026-07-16',
+      title: 'focus',
+      startTime: '2026-07-16T09:00:00.000Z',
+      endTime: '2026-07-16T10:00:00.000Z',
+      restrictMode: RestrictMode.NONE,
+      restrictedAppIds: ['app-1']
+    });
+
+    expect(reminder.restrictedAppIds).toEqual([]);
+  });
+
+  it('clears restricted app ids for FULL_PHONE mode', () => {
+    const reminder = createReminderEntity({
+      userId: 'user-1',
+      date: '2026-07-16',
+      title: 'focus',
+      startTime: '2026-07-16T09:00:00.000Z',
+      endTime: '2026-07-16T10:00:00.000Z',
+      restrictMode: RestrictMode.FULL_PHONE,
+      restrictedAppIds: ['app-1']
+    });
+
+    expect(reminder.restrictedAppIds).toEqual([]);
+  });
 });
