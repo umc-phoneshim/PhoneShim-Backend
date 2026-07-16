@@ -56,6 +56,7 @@ export type ValidatedReminderUpdate = {
 const VALID_RESTRICT_MODES = new Set<string>(Object.values(RestrictMode));
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MIN_REMINDER_DURATION_MS = 60 * 1000;
+const MAX_TITLE_LENGTH = 20;
 const KST_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Seoul',
   year: 'numeric',
@@ -71,6 +72,17 @@ const normalizeRequiredString = (value: string, fieldName: string): string => {
   }
 
   return normalized;
+};
+
+const normalizeReminderTitle = (value: string): string => {
+  if (value.length > MAX_TITLE_LENGTH) {
+    throw new BadRequestError(
+      'title must be 20 characters or fewer',
+      'VALIDATION_ERROR'
+    );
+  }
+
+  return normalizeRequiredString(value, 'title');
 };
 
 export const parseDateOnly = (value: string): Date => {
@@ -158,7 +170,7 @@ export function createReminderEntity(payload: CreateReminderPayload): NewReminde
   return {
     userId: normalizeRequiredString(payload.userId, 'userId'),
     date,
-    title: normalizeRequiredString(payload.title, 'title'),
+    title: normalizeReminderTitle(payload.title),
     startTime,
     endTime,
     restrictMode,
@@ -174,7 +186,7 @@ export function createReminderUpdate(payload: UpdateReminderPayload): ValidatedR
   }
 
   if (payload.title !== undefined) {
-    update.title = normalizeRequiredString(payload.title, 'title');
+    update.title = normalizeReminderTitle(payload.title);
   }
 
   if (payload.startTime !== undefined) {
