@@ -133,7 +133,7 @@ Google/Kakao 등 소셜 로그인 계정을 사용자와 연결하는 테이블�
 | id | uuid | 리마인더의 고유 식별자 |
 | user_id | uuid | 리마인더를 등록한 사용자 ID |
 | date | date | 일정 날짜 |
-| title | varchar | 일정 제목 |
+| title | varchar(20) | 일정 제목. 공백 포함 최대 20자 |
 | start_time | timestamp | 시작 시각 |
 | end_time | timestamp | 종료 시각 |
 | restrict_mode | enum | 일정 시간 동안 적용할 제한 방식: NONE, FULL_PHONE, SPECIFIC_APP |
