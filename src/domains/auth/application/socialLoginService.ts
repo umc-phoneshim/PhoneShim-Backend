@@ -73,10 +73,17 @@ function isWithinGracePeriod(withdrawalRequestedAt: Date | null): boolean {
   return elapsedDays <= WITHDRAWAL_GRACE_PERIOD_DAYS;
 }
 
+type LoginGuardedUser = {
+  id: string;
+  status: string;
+  withdrawalRequestedAt: Date | null;
+};
 
-async function reactivateIfWithdrawn<T extends { id: string; status: string; withdrawalRequestedAt: Date | null }>(
-  user: T
-): Promise<T> {
+async function guardAndReactivateAccount<T extends LoginGuardedUser>(user: T): Promise<T> {
+  if (user.status === 'DELETED') {
+    throw new ForbiddenError('탈퇴 완료된 계정입니다.', 'ACCOUNT_DELETED');
+  }
+
   if (user.status !== 'WITHDRAWAL_PENDING') {
     return user;
   }
@@ -103,7 +110,6 @@ export async function socialLogin(provider: Provider, accessToken: string) {
       provider === 'KAKAO'
         ? await fetchKakaoUserInfo(accessToken)
         : await fetchGoogleUserInfo(accessToken);
-
     const name = 'nickname' in userInfo ? userInfo.nickname : userInfo.name;
 
     let user = await findUserBySocialAccount(provider, userInfo.providerUserId);
@@ -136,7 +142,7 @@ export async function socialLogin(provider: Provider, accessToken: string) {
       }
     }
 
-    user = await reactivateIfWithdrawn(user);
+    user = await guardAndReactivateAccount(user);
 
     const token = signAccessToken({ userId: user.id, email: user.email });
 
