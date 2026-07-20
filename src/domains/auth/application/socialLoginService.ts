@@ -2,12 +2,14 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../../../shared/database/prismaClient';
 import { signAccessToken } from '../../../shared/auth/jwt';
+import { ForbiddenError } from '../../../shared/errors/appError';
 import { fetchKakaoUserInfo } from '../infrastructure/kakaoAuthClient';
 import { fetchGoogleUserInfo } from '../infrastructure/googleAuthClient';
 
 type Provider = 'KAKAO' | 'GOOGLE';
 
-// Prisma unique constraint 위반 에러(P2002)인지 확인하는 헬퍼
+const WITHDRAWAL_GRACE_PERIOD_DAYS = 14;
+
 function isUniqueConstraintError(error: unknown): boolean {
   return (
     error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
@@ -25,8 +27,6 @@ async function findUserBySocialAccount(provider: Provider, providerUserId: strin
   return account?.user ?? null;
 }
 
-// 신규 유저/소셜계정 생성을 트랜잭션으로 원자적으로 묶는다.
-// (existingUser 조회 후 socialAccount만 추가하는 경우 / User+SocialAccount 함께 새로 만드는 경우 둘 다 커버)
 async function createUserWithSocialAccount(
   provider: Provider,
   userInfo: { providerUserId: string; email: string },
@@ -35,7 +35,6 @@ async function createUserWithSocialAccount(
 ) {
   return prisma.$transaction(async (tx) => {
     if (existingUserId) {
-      // 기존 유저에 새 SocialAccount만 연결
       await tx.socialAccount.create({
         data: {
           provider,
@@ -47,7 +46,6 @@ async function createUserWithSocialAccount(
       return tx.user.findUniqueOrThrow({ where: { id: existingUserId } });
     }
 
-    // 완전히 새로운 유저 -> User + SocialAccount 함께 생성
     return tx.user.create({
       data: {
         email: userInfo.email,
@@ -64,9 +62,43 @@ async function createUserWithSocialAccount(
   });
 }
 
+function isWithinGracePeriod(withdrawalRequestedAt: Date | null): boolean {
+  if (!withdrawalRequestedAt) {
+    return true;
+  }
+
+  const elapsedMs = Date.now() - withdrawalRequestedAt.getTime();
+  const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
+
+  return elapsedDays <= WITHDRAWAL_GRACE_PERIOD_DAYS;
+}
+
+
+async function reactivateIfWithdrawn<T extends { id: string; status: string; withdrawalRequestedAt: Date | null }>(
+  user: T
+): Promise<T> {
+  if (user.status !== 'WITHDRAWAL_PENDING') {
+    return user;
+  }
+
+  if (!isWithinGracePeriod(user.withdrawalRequestedAt)) {
+    throw new ForbiddenError(
+      '탈퇴 유예 기간(14일)이 만료되어 더 이상 로그인할 수 없습니다.',
+      'WITHDRAWAL_PERIOD_EXPIRED'
+    );
+  }
+
+  return prisma.user.update({
+    where: { id: user.id },
+    data: {
+      status: 'ACTIVE',
+      withdrawalRequestedAt: null,
+    },
+  }) as unknown as T;
+}
+
 export async function socialLogin(provider: Provider, accessToken: string) {
   try {
-    // 1. provider별로 사용자 정보 조회
     const userInfo =
       provider === 'KAKAO'
         ? await fetchKakaoUserInfo(accessToken)
@@ -74,12 +106,10 @@ export async function socialLogin(provider: Provider, accessToken: string) {
 
     const name = 'nickname' in userInfo ? userInfo.nickname : userInfo.name;
 
-    // 2. 이미 연동된 소셜 계정인지 조회
     let user = await findUserBySocialAccount(provider, userInfo.providerUserId);
     let isNewUser = false;
 
     if (!user) {
-      // 3. 처음 보는 소셜 계정 -> 이메일로 기존 유저 있는지 확인 (ERR-01: 중복 이메일 귀속)
       const existingUser = await prisma.user.findUnique({
         where: { email: userInfo.email },
       });
@@ -93,9 +123,6 @@ export async function socialLogin(provider: Provider, accessToken: string) {
         );
         isNewUser = !existingUser;
       } catch (error) {
-        // race condition: 동시 요청으로 이미 다른 요청이 먼저 생성/연결한 경우
-        // 트랜잭션이 unique constraint(P2002) 위반으로 롤백되면,
-        // 에러로 취급하지 않고 재조회해서 로그인으로 이어간다.
         if (isUniqueConstraintError(error)) {
           const recoveredUser =
             (await findUserBySocialAccount(provider, userInfo.providerUserId)) ??
@@ -109,7 +136,8 @@ export async function socialLogin(provider: Provider, accessToken: string) {
       }
     }
 
-    // 4. 우리 서비스 JWT 발급
+    user = await reactivateIfWithdrawn(user);
+
     const token = signAccessToken({ userId: user.id, email: user.email });
 
     return {
@@ -117,7 +145,7 @@ export async function socialLogin(provider: Provider, accessToken: string) {
       isNewUser,
     };
   } catch (error) {
-    console.error('============= 🚨 소셜로그인 에러 발생 🚨 =============');
+    console.error('============= 소셜로그인 에러 발생 =============');
     console.error(error);
     console.error('====================================================');
     throw error;
