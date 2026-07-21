@@ -1,4 +1,3 @@
-// src/domains/auth/application/socialLoginService.ts
 import { Prisma } from '@prisma/client';
 import prisma from '../../../shared/database/prismaClient';
 import { signAccessToken } from '../../../shared/auth/jwt';
@@ -27,25 +26,30 @@ async function findUserBySocialAccount(provider: Provider, providerUserId: strin
   return account?.user ?? null;
 }
 
+async function linkSocialAccountToUser(
+  provider: Provider,
+  userInfo: { providerUserId: string; email: string },
+  userId: string
+) {
+  return prisma.$transaction(async (tx) => {
+    await tx.socialAccount.create({
+      data: {
+        provider,
+        providerUserId: userInfo.providerUserId,
+        email: userInfo.email,
+        userId,
+      },
+    });
+    return tx.user.findUniqueOrThrow({ where: { id: userId } });
+  });
+}
+
 async function createUserWithSocialAccount(
   provider: Provider,
   userInfo: { providerUserId: string; email: string },
-  name: string,
-  existingUserId: string | null
+  name: string
 ) {
   return prisma.$transaction(async (tx) => {
-    if (existingUserId) {
-      await tx.socialAccount.create({
-        data: {
-          provider,
-          providerUserId: userInfo.providerUserId,
-          email: userInfo.email,
-          userId: existingUserId,
-        },
-      });
-      return tx.user.findUniqueOrThrow({ where: { id: existingUserId } });
-    }
-
     return tx.user.create({
       data: {
         email: userInfo.email,
@@ -110,10 +114,12 @@ export async function socialLogin(provider: Provider, accessToken: string) {
       provider === 'KAKAO'
         ? await fetchKakaoUserInfo(accessToken)
         : await fetchGoogleUserInfo(accessToken);
+
     const name = 'nickname' in userInfo ? userInfo.nickname : userInfo.name;
 
     let user = await findUserBySocialAccount(provider, userInfo.providerUserId);
     let isNewUser = false;
+    let alreadyGuarded = false;
 
     if (!user) {
       const existingUser = await prisma.user.findUnique({
@@ -121,13 +127,15 @@ export async function socialLogin(provider: Provider, accessToken: string) {
       });
 
       try {
-        user = await createUserWithSocialAccount(
-          provider,
-          userInfo,
-          name,
-          existingUser?.id ?? null
-        );
-        isNewUser = !existingUser;
+        if (existingUser) {
+          const guardedExistingUser = await guardAndReactivateAccount(existingUser);
+          user = await linkSocialAccountToUser(provider, userInfo, guardedExistingUser.id);
+          isNewUser = false;
+          alreadyGuarded = true;
+        } else {
+          user = await createUserWithSocialAccount(provider, userInfo, name);
+          isNewUser = true;
+        }
       } catch (error) {
         if (isUniqueConstraintError(error)) {
           const recoveredUser =
@@ -136,13 +144,16 @@ export async function socialLogin(provider: Provider, accessToken: string) {
 
           user = recoveredUser;
           isNewUser = false;
+          alreadyGuarded = false;
         } else {
           throw error;
         }
       }
     }
 
-    user = await guardAndReactivateAccount(user);
+    if (!alreadyGuarded) {
+      user = await guardAndReactivateAccount(user);
+    }
 
     const token = signAccessToken({ userId: user.id, email: user.email });
 
@@ -151,7 +162,7 @@ export async function socialLogin(provider: Provider, accessToken: string) {
       isNewUser,
     };
   } catch (error) {
-    console.error('============= 소셜로그인 에러 발생 =============');
+    console.error('=============  소셜로그인 에러 발생  =============');
     console.error(error);
     console.error('====================================================');
     throw error;
