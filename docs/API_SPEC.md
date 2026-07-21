@@ -107,6 +107,8 @@
 | UsageLog | GET | `/api/usage-logs?date=` | 일별 주의 앱 사용량 조회 | 예정 |
 | UsageReason | POST | `/api/usage-reasons` | 사용 사유 입력 | 예정 |
 | UsageReason | GET | `/api/usage-reasons/calendar?month=` | 날짜별 사유 입력 여부 조회 | 예정 |
+| UsageSession | POST | `/api/usage-sessions` | 앱 사용 세션(시작~끝) 저장 | 예정 |
+| UsageSession | GET | `/api/usage-sessions?date=` | 날짜별 타임테이블 세션 조회 | 예정 |
 | AlertSetting | GET | `/api/alert-settings` | 하루 알림 설정 조회 | 예정 |
 | AlertSetting | PATCH | `/api/alert-settings` | 하루 알림 시간 수정 | 예정 |
 | Report | GET | `/api/reports/summary?range=` | 주간/월간 요약 조회 | 예정 |
@@ -1342,9 +1344,11 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 |---|---|---|
 | 404 | REMINDER_NOT_FOUND | 할 일이 없거나 본인 소유가 아님 |
 
-## 13. UsageLog / UsageReason
+## 13. UsageLog / UsageReason / UsageSession
 
 기능명세서 `REP101`, `REP102`, `REP106`, 정책 `REP-01`에 해당합니다.
+
+> `UsageLog`는 하루 앱별 합계(대시보드용)이고, `UsageSession`은 시작~끝 시각을 가진 사용 구간으로 `REP101` 타임테이블의 원본 데이터입니다. 하루에 앱당 여러 건이 쌓일 수 있습니다.
 
 ### GET `/api/usage-logs?date=YYYY-MM-DD`
 
@@ -1440,6 +1444,74 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
     {
       "date": "2026-07-02",
       "hasReason": false
+    }
+  ]
+}
+```
+
+### POST `/api/usage-sessions`
+
+앱 사용 세션(시작~끝 시각) 하나를 저장합니다. REP101 타임테이블의 원본 데이터입니다.
+
+- 인증: 필요
+- 상태: 예정
+
+#### Request Body
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| monitoredAppId | string | Y | 주의 앱 ID |
+| date | string | Y | 사용 날짜. `YYYY-MM-DD` (KST 기준) |
+| startTime | string | Y | 사용 시작 시각 ISO string |
+| endTime | string | Y | 사용 종료 시각 ISO string. `startTime`보다 뒤여야 함 |
+
+#### Response 201
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "userId": "uuid",
+    "monitoredAppId": "uuid",
+    "date": "2026-07-07",
+    "startTime": "2026-07-07T12:00:00.000Z",
+    "endTime": "2026-07-07T12:30:00.000Z",
+    "createdAt": "2026-07-07T12:30:10.000Z",
+    "updatedAt": "2026-07-07T12:30:10.000Z"
+  }
+}
+```
+
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
+| 400 | VALIDATION_ERROR | 필수값 누락 또는 `endTime`이 `startTime`보다 앞 |
+| 404 | MONITORED_APP_NOT_FOUND | 주의 앱이 없거나 본인 소유가 아님 |
+
+### GET `/api/usage-sessions?date=YYYY-MM-DD`
+
+특정 날짜의 앱 사용 세션을 `startTime` 오름차순으로 조회합니다. `date`를 생략하면 KST 기준 오늘입니다.
+
+- 인증: 필요
+- 상태: 예정
+
+#### Response 200
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "userId": "uuid",
+      "monitoredAppId": "uuid",
+      "date": "2026-07-07",
+      "startTime": "2026-07-07T12:00:00.000Z",
+      "endTime": "2026-07-07T12:30:00.000Z",
+      "createdAt": "2026-07-07T12:30:10.000Z",
+      "updatedAt": "2026-07-07T12:30:10.000Z"
     }
   ]
 }
