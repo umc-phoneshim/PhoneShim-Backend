@@ -85,28 +85,32 @@
 | MonitoredApp | GET | `/api/monitored-apps/:id` | 주의 앱 단건 조회 | 구현완료 |
 | MonitoredApp | PATCH | `/api/monitored-apps/:id` | 주의 앱 수정 | 구현완료 |
 | MonitoredApp | DELETE | `/api/monitored-apps/:id` | 주의 앱 삭제 | 구현완료 |
-| Auth | POST | `/api/auth/google` | 구글 로그인/회원가입 | 예정 |
-| Auth | POST | `/api/auth/kakao` | 카카오 로그인/회원가입 | 예정 |
+| Auth | POST | `/api/auth/google` | 구글 로그인/회원가입 | 구현완료 |
+| Auth | POST | `/api/auth/kakao` | 카카오 로그인/회원가입 | 구현완료 |
 | Auth | POST | `/api/auth/logout` | 로그아웃 | 예정 |
 | Auth | POST | `/api/auth/link-account` | 동일 이메일 소셜 계정 연동 | 예정 |
 | Auth | POST | `/api/auth/recover-withdrawal` | 탈퇴 유예 계정 복구 | 예정 |
-| User | GET | `/api/users/me` | 내 프로필 조회 | 예정 |
+| User | GET | `/api/users/me` | 내 프로필 조회 | 구현완료 |
 | User | PATCH | `/api/users/me` | 내 이름/목표 문구 수정 | 예정 |
 | User | DELETE | `/api/users/me` | 회원 탈퇴 요청 | 예정 |
 | TotalGoal | POST | `/api/total-goals` | 전체 목표 생성/설정 | 예정 |
 | TotalGoal | GET | `/api/total-goals` | 전체 목표 조회 | 예정 |
 | TotalGoal | PATCH | `/api/total-goals` | 전체 목표 수정 | 예정 |
-| AppGoal | POST | `/api/app-goals` | 앱별 목표 생성/설정 | 예정 |
-| AppGoal | GET | `/api/app-goals?monitoredAppId=` | 앱별 목표 조회 | 예정 |
-| AppGoal | PATCH | `/api/app-goals/:id` | 앱별 목표 수정 | 예정 |
-| Reminder | POST | `/api/reminders` | 할 일 생성 | 구현됨 |
-| Reminder | GET | `/api/reminders?date=` | 날짜별 할 일 목록 조회 | 구현됨 |
-| Reminder | GET | `/api/reminders/:id` | 할 일 단건 조회 | 구현됨 |
-| Reminder | PATCH | `/api/reminders/:id` | 할 일 수정 | 구현됨 |
-| Reminder | DELETE | `/api/reminders/:id` | 할 일 삭제 | 구현됨 |
-| UsageLog | GET | `/api/usage-logs?date=` | 일별 주의 앱 사용량 조회 | 예정 |
-| UsageReason | POST | `/api/usage-reasons` | 사용 사유 입력 | 예정 |
+| AppGoal | POST | `/api/app-goals` | 앱별 목표 생성/설정 | 구현완료 |
+| AppGoal | GET | `/api/app-goals?monitoredAppId=` | 앱별 목표 조회 | 구현완료 |
+| AppGoal | PATCH | `/api/app-goals/:id` | 앱별 목표 수정 | 구현완료 |
+| AppGoal | DELETE | `/api/app-goals/:id` | 앱별 목표 삭제 | 구현완료 |
+| Reminder | POST | `/api/reminders` | 할 일 생성 | 구현완료 |
+| Reminder | GET | `/api/reminders?date=` | 날짜별 할 일 목록 조회 | 구현완료 |
+| Reminder | GET | `/api/reminders/:id` | 할 일 단건 조회 | 구현완료 |
+| Reminder | PATCH | `/api/reminders/:id` | 할 일 수정 | 구현완료 |
+| Reminder | DELETE | `/api/reminders/:id` | 할 일 삭제 | 구현완료 |
+| UsageLog | GET | `/api/usage-logs?date=` | 일별 주의 앱 사용량 조회 | 구현완료 |
+| UsageLog | GET | `/api/usage-logs/status` | 오늘 주의 앱 사용 현황 조회 | 구현완료 |
+| UsageLog | PUT | `/api/usage-logs` | 일별 주의 앱 사용량 기록/갱신 | 구현완료 |
+| UsageReason | POST | `/api/usage-reasons` | 사용 사유 입력 | 구현완료 |
 | UsageReason | GET | `/api/usage-reasons/calendar?month=` | 날짜별 사유 입력 여부 조회 | 예정 |
+| Dashboard | GET | `/api/dashboard/daily-summary` | 오늘 전체 사용 요약 조회 | 구현완료 |
 | AlertSetting | GET | `/api/alert-settings` | 하루 알림 설정 조회 | 예정 |
 | AlertSetting | PATCH | `/api/alert-settings` | 하루 알림 시간 수정 | 예정 |
 | Report | GET | `/api/reports/summary?range=` | 주간/월간 요약 조회 | 예정 |
@@ -441,57 +445,25 @@
 구글 소셜 로그인/회원가입을 처리합니다.
 
 - 인증: 불필요
-- 상태: 예정
+- 상태: 구현완료
+- 클라이언트가 Google SDK로 발급받은 access token을 서버로 전달합니다.
 
 #### Request Body
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| providerUserId | string | Y | 구글 사용자 고유 ID |
-| email | string | Y | 구글 계정 이메일 |
-| name | string | Y | 사용자 이름 |
-| profileImage | string | N | 프로필 이미지 URL |
+| accessToken | string | Y | Google access token |
 
 #### Response 200
 
-기존 사용자 로그인 성공.
+로그인 또는 회원가입 성공.
 
 ```json
 {
   "success": true,
   "data": {
     "accessToken": "jwt-access-token",
-    "user": {
-      "id": "uuid",
-      "email": "user@example.com",
-      "name": "홍길동",
-      "profileImage": null,
-      "motivation": null,
-      "status": "ACTIVE"
-    },
     "isNewUser": false
-  }
-}
-```
-
-#### Response 201
-
-신규 사용자 가입 성공.
-
-```json
-{
-  "success": true,
-  "data": {
-    "accessToken": "jwt-access-token",
-    "user": {
-      "id": "uuid",
-      "email": "user@example.com",
-      "name": "홍길동",
-      "profileImage": null,
-      "motivation": null,
-      "status": "ACTIVE"
-    },
-    "isNewUser": true
   }
 }
 ```
@@ -500,9 +472,8 @@
 
 | Status | Code | 설명 |
 |---|---|---|
-| 400 | VALIDATION_ERROR | 필수값 누락 |
-| 409 | ACCOUNT_LINK_REQUIRED | 동일 이메일의 다른 소셜 계정이 존재함 |
-| 409 | WITHDRAWAL_PENDING | 탈퇴 유예 계정이며 복구 확인이 필요함 |
+| 400 | ACCESS_TOKEN_REQUIRED | accessToken 누락 |
+| 500 | INTERNAL_SERVER_ERROR | 소셜 사용자 정보 조회 또는 로그인 처리 실패 |
 
 ### POST `/api/auth/recover-withdrawal`
 
@@ -553,16 +524,14 @@
 카카오 소셜 로그인/회원가입을 처리합니다.
 
 - 인증: 불필요
-- 상태: 예정
+- 상태: 구현완료
+- 클라이언트가 Kakao SDK로 발급받은 access token을 서버로 전달합니다.
 
 #### Request Body
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| providerUserId | string | Y | 카카오 사용자 고유 ID |
-| email | string | Y | 카카오 계정 이메일 |
-| name | string | N | 사용자 이름 |
-| profileImage | string | N | 프로필 이미지 URL |
+| accessToken | string | Y | Kakao access token |
 
 #### Response 200/201
 
@@ -571,14 +540,6 @@
   "success": true,
   "data": {
     "accessToken": "jwt-access-token",
-    "user": {
-      "id": "uuid",
-      "email": "user@example.com",
-      "name": "홍길동",
-      "profileImage": null,
-      "motivation": null,
-      "status": "ACTIVE"
-    },
     "isNewUser": true
   }
 }
@@ -588,9 +549,8 @@
 
 | Status | Code | 설명 |
 |---|---|---|
-| 400 | VALIDATION_ERROR | 필수값 누락 |
-| 409 | ACCOUNT_LINK_REQUIRED | 동일 이메일의 다른 소셜 계정이 존재함 |
-| 409 | WITHDRAWAL_PENDING | 탈퇴 유예 계정이며 복구 확인이 필요함 |
+| 400 | ACCESS_TOKEN_REQUIRED | accessToken 누락 |
+| 500 | INTERNAL_SERVER_ERROR | 소셜 사용자 정보 조회 또는 로그인 처리 실패 |
 
 ### POST `/api/auth/link-account`
 
@@ -646,7 +606,7 @@
 내 프로필 정보를 조회합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Response 200
 
@@ -654,17 +614,19 @@
 {
   "success": true,
   "data": {
-    "id": "uuid",
     "email": "user@example.com",
     "name": "홍길동",
     "profileImage": null,
-    "motivation": "오늘은 2시간만 사용하기",
-    "status": "ACTIVE",
-    "createdAt": "2026-07-07T00:00:00.000Z",
-    "updatedAt": "2026-07-07T00:00:00.000Z"
+    "motivation": "오늘은 2시간만 사용하기"
   }
 }
 ```
+
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
+| 404 | USER_NOT_FOUND | 사용자를 찾을 수 없음 |
 
 ### PATCH `/api/users/me`
 
@@ -848,7 +810,7 @@
 앱별 목표를 생성합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Request Body
 
@@ -893,7 +855,7 @@
 특정 주의 앱의 목표를 조회합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Response 200
 
@@ -926,7 +888,7 @@
 앱별 목표를 수정합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Request Body
 
@@ -963,6 +925,24 @@
 | 400 | INVALID_TARGET_COUNT | 목표 횟수가 1 미만 |
 | 400 | INVALID_GOAL_REASON | 목표 이유가 100자 초과 |
 | 400 | VALIDATION_ERROR | 수정 가능한 필드가 하나도 없음 |
+| 404 | APP_GOAL_NOT_FOUND | 앱 목표가 없거나 본인 소유가 아님 |
+
+### DELETE `/api/app-goals/:id`
+
+앱별 목표를 삭제합니다.
+
+- 인증: 필요
+- 상태: 구현완료
+- 본인 소유 주의 앱에 연결된 목표만 삭제할 수 있습니다.
+
+#### Response 204
+
+응답 body 없음.
+
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
 | 404 | APP_GOAL_NOT_FOUND | 앱 목표가 없거나 본인 소유가 아님 |
 
 ## 12. Reminder
@@ -1040,7 +1020,7 @@
 - 리마인더가 수정되면 클라이언트는 기존 예약을 취소하고 최신 응답 데이터 기준으로 다시 예약합니다.
 - 리마인더가 삭제되면 클라이언트는 해당 리마인더의 예약 작업을 취소합니다.
 - 삭제된 리마인더가 현재 제한 실행 중이었다면 클라이언트는 해당 리마인더로 적용한 제한을 해제합니다.
-- 백엔드 이벤트 기반 동기화가 추가되기 전까지는 API 응답 후 클라이언트 재조회 또는 로컬 캐시 갱신을 기본 방식으로 사용합니다.
+- 오늘 날짜에 영향을 주는 리마인더 변경은 Socket.IO 동기화 이벤트를 발행하므로, 클라이언트는 이벤트 수신 후 관련 예약 작업과 오늘 목록을 갱신합니다.
 
 ### MAIN105 Sync Contract
 
@@ -1129,7 +1109,7 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 할 일을 생성합니다.
 
 - 인증: 필요
-- 상태: 구현됨
+- 상태: 구현완료
 
 #### Request Body
 
@@ -1189,7 +1169,7 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 날짜별 할 일 목록을 조회합니다.
 
 - 인증: 필요
-- 상태: 구현됨
+- 상태: 구현완료
 - `date`가 없으면 KST 기준 오늘 날짜를 기본값으로 사용합니다.
 - 정렬: `startTime asc`, `endTime asc`, `createdAt asc`
 
@@ -1232,7 +1212,7 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 할 일 단건을 조회합니다.
 
 - 인증: 필요
-- 상태: 구현됨
+- 상태: 구현완료
 - 본인 소유 할 일만 조회할 수 있습니다.
 
 #### Response 200
@@ -1266,7 +1246,7 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 할 일을 수정합니다.
 
 - 인증: 필요
-- 상태: 구현됨
+- 상태: 구현완료
 - 요청 body는 `POST /api/reminders`와 동일한 필드를 부분적으로 허용합니다.
 - 최소 1개 이상의 수정 가능한 필드가 필요합니다.
 - 요청하지 않은 필드는 기존 값을 유지한 뒤 전체 정책을 다시 검증합니다.
@@ -1329,7 +1309,7 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 할 일을 삭제합니다.
 
 - 인증: 필요
-- 상태: 구현됨
+- 상태: 구현완료
 - 본인 소유 할 일만 삭제할 수 있습니다.
 
 #### Response 204
@@ -1351,7 +1331,8 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 일별 주의 앱 사용량을 조회합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
+- `date`가 없으면 KST 기준 오늘 날짜를 사용합니다.
 
 #### Response 200
 
@@ -1373,12 +1354,84 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 }
 ```
 
+### GET `/api/usage-logs/status`
+
+MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
+
+- 인증: 필요
+- 상태: 구현완료
+- KST 기준 오늘 날짜의 사용량과 앱별 목표를 함께 반환합니다.
+
+#### Response 200
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "monitoredAppId": "uuid",
+      "appName": "YouTube",
+      "packageName": "com.google.android.youtube",
+      "appIcon": null,
+      "sortOrder": 0,
+      "targetMinutes": 60,
+      "targetCount": 5,
+      "usedMinutes": 35,
+      "entryCount": 4
+    }
+  ]
+}
+```
+
+### PUT `/api/usage-logs`
+
+안드로이드 클라이언트가 일별 주의 앱 사용량을 기록하거나 갱신합니다.
+
+- 인증: 필요
+- 상태: 구현완료
+- 같은 사용자, 같은 주의 앱, 같은 날짜의 기록은 upsert로 갱신됩니다.
+- `date`가 없으면 KST 기준 오늘 날짜를 사용합니다.
+
+#### Request Body
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| monitoredAppId | string | Y | 주의 앱 ID |
+| date | string | N | 사용 날짜. `YYYY-MM-DD`. 없으면 KST 오늘 |
+| usedMinutes | number | Y | 누적 사용 시간(분) |
+| entryCount | number | Y | 누적 앱 진입 횟수 |
+
+#### Response 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "userId": "uuid",
+    "monitoredAppId": "uuid",
+    "date": "2026-07-07T00:00:00.000Z",
+    "usedMinutes": 35,
+    "entryCount": 4,
+    "createdAt": "2026-07-07T00:00:00.000Z",
+    "updatedAt": "2026-07-07T01:00:00.000Z"
+  }
+}
+```
+
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
+| 400 | VALIDATION_ERROR | 필수값 누락, 타입 불일치, 잘못된 날짜 또는 음수 사용량 |
+| 404 | MONITORED_APP_NOT_FOUND | 주의 앱이 없거나 본인 소유가 아님 |
+
 ### POST `/api/usage-reasons`
 
 특정 앱 사용 시간 블록에 대한 사용 사유를 입력합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 - 입력/수정 가능 시간: 당일 22:00 ~ 익일 10:00
 
 #### Request Body
@@ -1445,7 +1498,34 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 }
 ```
 
-## 14. AlertSetting
+## 14. Dashboard
+
+메인 화면에서 사용할 오늘 전체 사용 요약을 조회합니다.
+
+### GET `/api/dashboard/daily-summary`
+
+KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조회합니다.
+
+- 인증: 필요
+- 상태: 구현완료
+- 전체 목표가 없으면 `targetMinutes`, `remainingMinutes`는 `null`이고 `isExceeded`는 `false`입니다.
+
+#### Response 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "date": "2026-07-07",
+    "targetMinutes": 120,
+    "usedMinutes": 35,
+    "remainingMinutes": 85,
+    "isExceeded": false
+  }
+}
+```
+
+## 15. AlertSetting
 
 기능명세서 `REP107`, 정책 `REP-04`, `REP-05`에 해당합니다.
 
@@ -1513,7 +1593,7 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 |---|---|---|
 | 400 | INVALID_ALERT_TIME | 1320~1439 범위를 벗어남 |
 
-## 15. Report / AI
+## 16. Report / AI
 
 기능명세서 `REP103`, `REP104`, `REP105`, 정책 `REP-02`, `REP-03`에 해당합니다.
 
@@ -1617,17 +1697,17 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 }
 ```
 
-## 16. 구현 순서 권장안
+## 17. 구현 순서 권장안
 
 1. Auth/User
 2. TotalGoal
 3. AppGoal
 4. AlertSetting
-5. Reminder
-6. UsageLog/UsageReason
+5. UsageLog/UsageReason
+6. Reminder
 7. Report/AI
 
-## 17. 문서 운영 규칙
+## 18. 문서 운영 규칙
 
 - 도메인 구현 PR은 이 문서의 endpoint, request, response, error code를 기준으로 작성합니다.
 - 구현 중 정책 변경이 필요하면 코드보다 먼저 이 문서를 수정하고 PR 설명에 변경 이유를 남깁니다.

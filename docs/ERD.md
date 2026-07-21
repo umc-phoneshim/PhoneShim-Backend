@@ -133,7 +133,7 @@ Google/Kakao 등 소셜 로그인 계정을 사용자와 연결하는 테이블�
 | id | uuid | 리마인더의 고유 식별자 |
 | user_id | uuid | 리마인더를 등록한 사용자 ID |
 | date | date | 일정 날짜 |
-| title | varchar(20) | 일정 제목. 공백 포함 최대 20자 |
+| title | varchar | 일정 제목. 애플리케이션에서 공백 포함 최대 20자 검증 |
 | start_time | timestamp | 시작 시각 |
 | end_time | timestamp | 종료 시각 |
 | restrict_mode | enum | 일정 시간 동안 적용할 제한 방식: NONE, FULL_PHONE, SPECIFIC_APP |
@@ -265,7 +265,7 @@ reminders
 
 ## 다음 작업
 
-1. ERDCloud 다이어그램을 이 문서 기준으로 갱신합니다.
-2. `prisma/schema.prisma`에 위 테이블, enum, unique/index 제약을 반영합니다.
-3. 현재 구현된 도메인 코드의 필드명을 ERD v1 보완안에 맞춥니다.
-4. API 명세서의 request/response 필드를 이 ERD 기준으로 재정리합니다.
+1. ERDCloud 다이어그램 이미지를 현재 Prisma schema 기준으로 갱신합니다.
+2. DB 레벨 제약과 애플리케이션 레벨 검증이 다른 항목은 이 문서의 제약 조건 섹션에 함께 명시합니다.
+3. 새 테이블, enum, unique/index 제약을 추가하는 PR은 `prisma/schema.prisma`, migration, 이 문서를 함께 갱신합니다.
+4. API 응답 필드가 DB 필드와 다르게 가공되는 경우 `docs/API_SPEC.md`에 응답 계약을 별도로 명시합니다.
