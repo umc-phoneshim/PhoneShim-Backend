@@ -8,6 +8,7 @@
 - 인증 방식: `Authorization: Bearer <accessToken>`
 
 > 이 문서는 백엔드 구현 기준 문서입니다. API 구현 시 이 문서의 경로, 필드명, 응답 형태, 에러 코드를 우선 기준으로 삼습니다.
+> 기획 기준은 Figma `폰쉼 PM 기획`의 `기능명세서 및 정책서` 페이지입니다. 기능 ID/정책 ID가 변경되면 이 문서의 매핑과 구현 상태를 함께 갱신합니다.
 
 ### 공통 구현 규칙
 
@@ -89,10 +90,9 @@
 | Auth | POST | `/api/auth/kakao` | 카카오 로그인/회원가입 | 구현완료 |
 | Auth | POST | `/api/auth/logout` | 로그아웃 | 예정 |
 | Auth | POST | `/api/auth/link-account` | 동일 이메일 소셜 계정 연동 | 예정 |
-| Auth | POST | `/api/auth/recover-withdrawal` | 탈퇴 유예 계정 복구 | 예정 |
+| Auth | DELETE | `/api/auth/withdraw` | 회원 탈퇴 요청 | 구현완료 |
 | User | GET | `/api/users/me` | 내 프로필 조회 | 구현완료 |
 | User | PATCH | `/api/users/me` | 내 이름/목표 문구 수정 | 예정 |
-| User | DELETE | `/api/users/me` | 회원 탈퇴 요청 | 예정 |
 | TotalGoal | POST | `/api/total-goals` | 전체 목표 생성/설정 | 예정 |
 | TotalGoal | GET | `/api/total-goals` | 전체 목표 조회 | 예정 |
 | TotalGoal | PATCH | `/api/total-goals` | 전체 목표 수정 | 예정 |
@@ -116,6 +116,18 @@
 | Report | GET | `/api/reports/summary?range=` | 주간/월간 요약 조회 | 예정 |
 | AI | POST | `/api/ai/daily-feedback` | 일간 AI 피드백 생성 | 예정 |
 | AI | POST | `/api/ai/suggest-goal` | 목표 시간/횟수 AI 제안 | 예정 |
+
+### Figma 명세 반영 현황
+
+| Figma 영역 | 주요 기능 ID | 현재 API 반영 상태 |
+|---|---|---|
+| 회원가입/로그인 | `A101`, `A102` | Auth API에 반영 |
+| 온보딩/설정 | `SET101`~`SET110` | 주의 앱/전체 목표/앱별 목표 API로 분산 반영. 사용자 성별/나이, 온보딩 완료/스킵 상태는 API/DB 계약 추가 필요 |
+| 메인 | `MAIN101`~`MAIN105` | Dashboard, UsageLog, Reminder 조회 API로 반영 |
+| 리마인더 | `REM101`~`REM109` | Reminder API와 Socket.IO 동기화 계약에 반영 |
+| 리포트 | `REP101`~`REP107` | UsageLog/UsageReason, Report/AI, AlertSetting으로 분산 반영. 객관식 사용 사유 선택지와 일별 제안 저장 여부는 정책 확정 필요. 개정 이력상 `REP-08` 추가가 확인되었으나 세부 API 계약은 미정 |
+| 마이 | `MY101`~`MY106` | User/Auth API에 반영 |
+| 설정 수정 | `PREF101`~`PREF106` | 기존 개별 조회/수정 API로 일부 반영. 통합 설정 조회/저장 API는 미정 |
 
 ## 5. System
 
@@ -148,6 +160,7 @@
 - 같은 사용자 안에서 `packageName` 중복 등록 불가
 - 목록 정렬: `sortOrder asc`, `createdAt asc`
 - 본인 소유가 아닌 앱은 조회/수정/삭제 불가
+- 기기 설치 앱 목록 조회와 사용정보 접근권한 요청/거부 안내는 클라이언트 책임입니다.
 
 ### POST `/api/monitored-apps`
 
@@ -473,51 +486,9 @@
 | Status | Code | 설명 |
 |---|---|---|
 | 400 | ACCESS_TOKEN_REQUIRED | accessToken 누락 |
+| 403 | ACCOUNT_DELETED | 탈퇴 완료된 계정 |
+| 403 | WITHDRAWAL_PERIOD_EXPIRED | 탈퇴 유예 기간이 만료된 계정 |
 | 500 | INTERNAL_SERVER_ERROR | 소셜 사용자 정보 조회 또는 로그인 처리 실패 |
-
-### POST `/api/auth/recover-withdrawal`
-
-탈퇴 유예 상태(`WITHDRAWAL_PENDING`)의 계정을 복구하고 로그인 토큰을 발급합니다.
-
-- 인증: 불필요
-- 상태: 예정
-- 탈퇴 요청 후 14일 이내인 계정만 복구할 수 있습니다.
-- 14일이 지난 계정은 복구하지 않고 신규 가입 플로우를 사용합니다.
-
-#### Request Body
-
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| provider | string | Y | `GOOGLE` 또는 `KAKAO` |
-| providerUserId | string | Y | 소셜 제공자 사용자 고유 ID |
-| email | string | Y | 소셜 계정 이메일 |
-
-#### Response 200
-
-```json
-{
-  "success": true,
-  "data": {
-    "accessToken": "jwt-access-token",
-    "user": {
-      "id": "uuid",
-      "email": "user@example.com",
-      "name": "홍길동",
-      "profileImage": null,
-      "motivation": null,
-      "status": "ACTIVE"
-    }
-  }
-}
-```
-
-#### Errors
-
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | VALIDATION_ERROR | 필수값 누락 또는 잘못된 provider |
-| 404 | USER_NOT_FOUND | 복구 가능한 탈퇴 유예 계정이 없음 |
-| 410 | WITHDRAWAL_EXPIRED | 탈퇴 유예 기간이 만료됨 |
 
 ### POST `/api/auth/kakao`
 
@@ -550,7 +521,41 @@
 | Status | Code | 설명 |
 |---|---|---|
 | 400 | ACCESS_TOKEN_REQUIRED | accessToken 누락 |
+| 403 | ACCOUNT_DELETED | 탈퇴 완료된 계정 |
+| 403 | WITHDRAWAL_PERIOD_EXPIRED | 탈퇴 유예 기간이 만료된 계정 |
 | 500 | INTERNAL_SERVER_ERROR | 소셜 사용자 정보 조회 또는 로그인 처리 실패 |
+
+### DELETE `/api/auth/withdraw`
+
+회원 탈퇴를 요청합니다.
+
+- 인증: 필요
+- 상태: 구현완료
+- 즉시 영구 삭제하지 않고 14일 유예 상태(`WITHDRAWAL_PENDING`)로 변경합니다.
+- 탈퇴 유예 기간 내 동일 소셜 계정으로 다시 로그인하면 `ACTIVE` 상태로 자동 복구되고 `withdrawalRequestedAt`은 `null`로 초기화됩니다.
+- 탈퇴 유예 기간이 만료된 계정 또는 `DELETED` 계정은 로그인할 수 없습니다.
+
+#### Response 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "status": "WITHDRAWAL_PENDING",
+    "withdrawalRequestedAt": "2026-07-21T00:00:00.000Z"
+  }
+}
+```
+
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
+| 400 | ALREADY_WITHDRAWAL_PENDING | 이미 탈퇴 처리 중인 계정 |
+| 400 | USER_ALREADY_DELETED | 이미 삭제된 계정 |
+| 401 | UNAUTHORIZED | 인증 토큰 누락 |
+| 401 | INVALID_TOKEN | 유효하지 않은 인증 토큰 |
+| 404 | USER_NOT_FOUND | 사용자를 찾을 수 없음 |
 
 ### POST `/api/auth/link-account`
 
@@ -666,27 +671,17 @@
 |---|---|---|
 | 400 | VALIDATION_ERROR | 빈 이름 또는 100자 초과 motivation |
 
-### DELETE `/api/users/me`
-
-회원 탈퇴를 요청합니다.
-
-- 인증: 필요
-- 상태: 예정
-- 즉시 영구 삭제하지 않고 14일 유예 상태로 변경합니다.
-
-#### Response 204
-
-응답 body 없음.
-
 ## 10. TotalGoal
 
-기능명세서 `SET105`, `MAIN103`, 정책 `SET-03`에 해당합니다.
+기능명세서 `SET105`, `MAIN103`, `PREF101`, `PREF103`, 정책 `SET-03`, `PR-01`, `PR-03`에 해당합니다.
 
 공통 정책:
 
 - 인증 필요
 - 사용자당 전체 목표는 1개입니다.
 - `targetMinutes`는 10~1430분만 허용합니다.
+- 설정/PREF 화면 진입 시 클라이언트는 서버 DB의 최신 목표 값을 조회해 화면에 바인딩합니다.
+- 전체 목표가 변경되면 클라이언트 스크린타임 엔진은 최신 제한 정책을 다시 적용해야 합니다.
 
 ### POST `/api/total-goals`
 
@@ -794,7 +789,7 @@
 
 ## 11. AppGoal
 
-기능명세서 `SET106`, `SET107`, `SET108`, `MAIN104`, 정책 `SET-04`, `SET-05`에 해당합니다.
+기능명세서 `SET106`, `SET107`, `SET108`, `MAIN104`, `PREF101`, `PREF104`, 정책 `SET-04`, `SET-05`, `PR-01`, `PR-02`, `PR-03`에 해당합니다.
 
 공통 정책:
 
@@ -804,6 +799,7 @@
 - `targetMinutes`는 10~1430분만 허용합니다.
 - `targetCount`는 1 이상만 허용합니다.
 - `goalReason`은 공백 포함 최대 100자입니다.
+- 앱별 목표 수정/삭제 후 클라이언트는 최신 제한 정책으로 스크린타임 엔진을 다시 적용해야 합니다.
 
 ### POST `/api/app-goals`
 
@@ -1326,6 +1322,14 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 
 기능명세서 `REP101`, `REP102`, `REP106`, 정책 `REP-01`에 해당합니다.
 
+공통 정책:
+
+- 주의 앱 사용 시간/진입 횟수는 클라이언트 스크린타임 엔진이 수집하고 백엔드는 일별 집계 저장/조회 계약을 제공합니다.
+- 주의 앱 진입 시 사용 이유 입력 팝업 호출은 클라이언트 책임입니다.
+- 같은 주의 앱을 종료 후 1분 이내 재진입하면 사용 이유를 다시 입력하지 않아도 됩니다.
+- 사용 이유를 선택하지 않고 팝업을 닫으면 클라이언트는 `기타` 사유로 저장합니다.
+- 현재 API의 `reason`은 문자열 자유 입력 계약입니다. Figma 정책의 객관식 선택지 코드가 확정되면 enum/code 필드 추가를 검토합니다.
+
 ### GET `/api/usage-logs?date=YYYY-MM-DD`
 
 일별 주의 앱 사용량을 조회합니다.
@@ -1535,6 +1539,7 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 - 알림 수신은 항상 ON을 기본으로 합니다.
 - 알림 시간은 22:00~23:59 사이만 허용합니다.
 - DB 저장값은 `alertTimeMinutes`입니다.
+- 데일리 리포트 알림 발송과 푸시 토큰 관리는 별도 알림 인프라 계약이 필요합니다.
 
 ### GET `/api/alert-settings`
 
@@ -1596,6 +1601,13 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 ## 16. Report / AI
 
 기능명세서 `REP103`, `REP104`, `REP105`, 정책 `REP-02`, `REP-03`에 해당합니다.
+
+공통 정책:
+
+- 제안 팝업은 금일 스마트폰 사용 시간, 앱 진입 횟수, 사용 이유를 종합 분석한 문구를 노출합니다.
+- 요약 분석은 주간/월간 범위에서 사용 이유 데이터를 집계하고, 앱별 색상 표현은 클라이언트 표시 책임으로 둡니다.
+- 목표 달성 캘린더 표시는 전체 폰 목표와 주의 앱 목표를 모두 만족한 날짜에만 달성으로 간주합니다.
+- 현재 `GET /api/reports/summary`는 요약 집계 계약이며, 일별 제안 결과를 장기 저장하는 API/DB 계약은 아직 없습니다.
 
 ### GET `/api/reports/summary?range=week|month&date=YYYY-MM-DD`
 
