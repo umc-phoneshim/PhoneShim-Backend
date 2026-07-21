@@ -1,7 +1,6 @@
 import { RestrictMode } from '@prisma/client';
 
 import { AppError, BadRequestError, NotFoundError } from '../../../shared/errors/appError';
-import { emitReminderMainSyncEvent } from '../../../shared/socket/mainSyncEvents';
 import {
   createReminderEntity,
   createReminderUpdate,
@@ -20,8 +19,6 @@ import * as reminderRepository from '../infrastructure/reminderRepository';
 const reminderNotFound = () => new NotFoundError('Reminder was not found', 'REMINDER_NOT_FOUND');
 const reminderTimeOverlap = () =>
   new AppError(409, 'REMINDER_TIME_OVERLAP', 'Reminder time range overlaps');
-
-const isKstToday = (date: Date) => toKstDateString(date) === toKstDateString(new Date());
 
 const ensureUserId = (userId: string) => {
   if (!userId.trim()) {
@@ -82,13 +79,7 @@ export async function createReminder(payload: CreateReminderPayload) {
   await ensureRestrictedAppOwnership(reminder.userId, reminder.restrictedAppIds);
   await ensureNoOverlap(reminder.userId, reminder.date, reminder.startTime, reminder.endTime);
 
-  const created = await reminderRepository.save(reminder);
-
-  if (isKstToday(created.date)) {
-    emitReminderMainSyncEvent('reminder.created');
-  }
-
-  return created;
+  return reminderRepository.save(reminder);
 }
 
 export async function getReminders(userId: string, date?: string) {
@@ -121,16 +112,10 @@ export async function updateReminder(id: string, userId: string, payload: Update
   await ensureNoOverlap(userId, resolved.date, resolved.startTime, resolved.endTime, id);
 
   try {
-    const updated = await reminderRepository.update(id, userId, {
+    return await reminderRepository.update(id, userId, {
       ...update,
       restrictedAppIds: resolved.restrictedAppIds
     });
-
-    if (isKstToday(current.date) || isKstToday(updated.date)) {
-      emitReminderMainSyncEvent('reminder.updated');
-    }
-
-    return updated;
   } catch (error) {
     if (reminderRepository.isPrismaKnownError(error, reminderRepository.RECORD_NOT_FOUND_ERROR)) {
       throw reminderNotFound();
@@ -141,14 +126,10 @@ export async function updateReminder(id: string, userId: string, payload: Update
 }
 
 export async function deleteReminder(id: string, userId: string) {
-  const current = await getReminderById(id, userId);
+  await getReminderById(id, userId);
 
   try {
     await reminderRepository.deleteByIdAndUserId(id, userId);
-
-    if (isKstToday(current.date)) {
-      emitReminderMainSyncEvent('reminder.deleted');
-    }
   } catch (error) {
     if (reminderRepository.isPrismaKnownError(error, reminderRepository.RECORD_NOT_FOUND_ERROR)) {
       throw reminderNotFound();
