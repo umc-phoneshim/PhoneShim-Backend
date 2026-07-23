@@ -111,3 +111,70 @@ export type UsageLogRecord = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+// REP106 캘린더 응답: 그 달에 목표를 달성(O)한 날짜 목록
+export type UsageCalendar = {
+  month: string;
+  achievedDates: string[];
+};
+
+// "YYYY-MM"을 받아 그 달의 첫날/마지막날 반환
+export function parseMonthRange(month: string): { start: Date; end: Date } {
+  if (!/^\d{4}-\d{2}$/.test(month)) {
+    throw new BadRequestError('month must be in YYYY-MM format', 'VALIDATION_ERROR');
+  }
+
+  const year = Number(month.slice(0, 4));
+  const monthIndex = Number(month.slice(5, 7)) - 1;
+
+  if (monthIndex < 0 || monthIndex > 11) {
+    throw new BadRequestError('month must be a valid month', 'VALIDATION_ERROR');
+  }
+
+  const start = new Date(Date.UTC(year, monthIndex, 1));
+  const end = new Date(Date.UTC(year, monthIndex + 1, 0)); // 다음 달 0일 = 이번 달 마지막 날
+
+  return { start, end };
+}
+
+// 정책 REP-07: 그 날 폰 전체 사용(주의앱 합계)이 전체 목표 이하이고,
+// 목표가 설정된 주의앱이 모두 각자 목표 이하일 때만 달성
+export function buildAchievedDates(
+  logs: { monitoredAppId: string; date: Date; usedMinutes: number }[],
+  totalTargetMinutes: number,
+  appTargetMinutes: Map<string, number>
+): string[] {
+  const usedByDate: Record<string, number> = {};
+  const appOkByDate: Record<string, boolean> = {};
+
+  for (const log of logs) {
+    const dateKey = formatDateOnly(log.date);
+
+    if (usedByDate[dateKey] === undefined) {
+      usedByDate[dateKey] = 0;
+      appOkByDate[dateKey] = true;
+    }
+
+    usedByDate[dateKey] += log.usedMinutes;
+
+    const appTarget = appTargetMinutes.get(log.monitoredAppId);
+    if (appTarget !== undefined && log.usedMinutes > appTarget) {
+      appOkByDate[dateKey] = false;
+    }
+  }
+
+  const achievedDates: string[] = [];
+
+  for (const dateKey of Object.keys(usedByDate)) {
+    const phoneOk = usedByDate[dateKey] <= totalTargetMinutes;
+    const allAppsOk = appOkByDate[dateKey];
+
+    if (phoneOk && allAppsOk) {
+      achievedDates.push(dateKey);
+    }
+  }
+
+  achievedDates.sort();
+
+  return achievedDates;
+}

@@ -4,12 +4,16 @@ import * as appGoalRepository from '../../appGoal/infrastructure/appGoalReposito
 import type { AppGoal } from '../../appGoal/domain/appGoalEntity';
 import * as monitoredAppRepository from '../../monitoredApp/infrastructure/monitoredAppRepository';
 import type { MonitoredApp } from '../../monitoredApp/domain/monitoredAppEntity';
+import * as totalGoalRepository from '../../totalGoal/infrastructure/totalGoalRepository';
 import {
+  buildAchievedDates,
   createUsageLogEntity,
   formatDateOnly,
   getKstDateOnly,
+  parseMonthRange,
   type MonitoredAppUsageStatus,
   type RecordUsageLogPayload,
+  type UsageCalendar,
   type UsageLogRecord
 } from '../domain/usageLogEntity';
 import type { DailyUsageSummary } from '../domain/usageLogRepositoryInterface';
@@ -94,4 +98,30 @@ export async function getTodayUsageStatus(userId: string): Promise<MonitoredAppU
       };
     })
     .sort((a: MonitoredAppUsageStatus, b: MonitoredAppUsageStatus) => a.sortOrder - b.sortOrder);
+}
+
+// REP106: 한 달 동안 목표를 달성(O)한 날짜 목록을 반환
+export async function getUsageCalendar(userId: string, month: string): Promise<UsageCalendar> {
+  const { start, end } = parseMonthRange(month);
+
+  const totalGoal = await totalGoalRepository.findByUserId(userId);
+
+  // 전체 목표가 없으면 폰 사용이 목표 이하인지 판단할 수 없으므로 달성일도 없음
+  if (!totalGoal) {
+    return { month, achievedDates: [] };
+  }
+
+  const monitoredApps = await monitoredAppRepository.findAllByUserId(userId);
+  const monitoredAppIds = monitoredApps.map((app: MonitoredApp) => app.id);
+
+  const appGoals = await appGoalRepository.findAllByMonitoredAppIds(monitoredAppIds);
+  const appTargetMinutes = new Map<string, number>(
+    appGoals.map((goal: AppGoal) => [goal.monitoredAppId, goal.targetMinutes])
+  );
+
+  const logs = await usageLogRepository.findAllByUserIdInRange(userId, start, end);
+
+  const achievedDates = buildAchievedDates(logs, totalGoal.targetMinutes, appTargetMinutes);
+
+  return { month, achievedDates };
 }
