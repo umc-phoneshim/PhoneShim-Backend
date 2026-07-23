@@ -93,9 +93,9 @@
 | Auth | DELETE | `/api/auth/withdraw` | 회원 탈퇴 요청 | 구현완료 |
 | User | GET | `/api/users/me` | 내 프로필 조회 | 구현완료 |
 | User | PATCH | `/api/users/me` | 내 이름/목표 문구 수정 | 예정 |
-| TotalGoal | POST | `/api/total-goals` | 전체 목표 생성/설정 | 예정 |
-| TotalGoal | GET | `/api/total-goals` | 전체 목표 조회 | 예정 |
-| TotalGoal | PATCH | `/api/total-goals` | 전체 목표 수정 | 예정 |
+| TotalGoal | POST | `/api/total-goals` | 전체 목표 생성/설정 | 구현완료 |
+| TotalGoal | GET | `/api/total-goals` | 전체 목표 조회 | 구현완료 |
+| TotalGoal | PATCH | `/api/total-goals` | 전체 목표 수정 | 구현완료 |
 | AppGoal | POST | `/api/app-goals` | 앱별 목표 생성/설정 | 구현완료 |
 | AppGoal | GET | `/api/app-goals?monitoredAppId=` | 앱별 목표 조회 | 구현완료 |
 | AppGoal | PATCH | `/api/app-goals/:id` | 앱별 목표 수정 | 구현완료 |
@@ -688,7 +688,7 @@
 전체 폰 사용 목표를 생성합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Request Body
 
@@ -725,7 +725,7 @@
 로그인 사용자의 전체 목표를 조회합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Response 200
 
@@ -754,7 +754,7 @@
 전체 목표를 수정합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Request Body
 
