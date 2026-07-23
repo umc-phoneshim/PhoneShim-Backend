@@ -14,7 +14,7 @@ router.use(authenticate);
  * @openapi
  * /api/alert-settings:
  *   get:
- *     summary: Get the daily report alert setting (REP107)
+ *     summary: Get the daily report alert setting
  *     tags:
  *       - AlertSettings
  *     security:
@@ -29,7 +29,7 @@ router.get('/', alertSettingController.getAlertSetting);
  * @openapi
  * /api/alert-settings:
  *   patch:
- *     summary: Update the daily report alert time (REP107)
+ *     summary: Update the daily report alert time
  *     tags:
  *       - AlertSettings
  *     security:

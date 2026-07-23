@@ -1,6 +1,5 @@
 import { BadRequestError } from '../../../shared/errors/appError';
 
-
 export type AlertSetting = {
   id: string;
   userId: string;
@@ -10,10 +9,8 @@ export type AlertSetting = {
   updatedAt: Date;
 };
 
-
 const MIN_ALERT_TIME_MINUTES = 1320;
 const MAX_ALERT_TIME_MINUTES = 1439;
-
 
 export function validateAlertTimeMinutes(value: number): number {
   if (

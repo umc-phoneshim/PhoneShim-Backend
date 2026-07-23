@@ -1,7 +1,5 @@
 import prisma from '../../../shared/database/prismaClient';
 
-
-
 // 알림 설정 조회
 export async function findOrCreateByUserId(userId: string) {
   const existing = await prisma.alertSetting.findUnique({ where: { userId } });
@@ -18,7 +16,6 @@ export async function findOrCreateByUserId(userId: string) {
     }
   });
 }
-
 
 // 알림 시간 수정
 export async function updateAlertTimeMinutes(userId: string, alertTimeMinutes: number) {
