@@ -109,7 +109,7 @@
 | UsageLog | GET | `/api/usage-logs/status` | 오늘 주의 앱 사용 현황 조회 | 구현완료 |
 | UsageLog | PUT | `/api/usage-logs` | 일별 주의 앱 사용량 기록/갱신 | 구현완료 |
 | UsageReason | POST | `/api/usage-reasons` | 사용 사유 입력 | 구현완료 |
-| UsageReason | GET | `/api/usage-reasons/calendar?month=` | 날짜별 사유 입력 여부 조회 | 예정 |
+| UsageLog | GET | `/api/usage-logs/calendar?month=` | 월별 목표 달성(O) 날짜 조회 | 구현완료 |
 | Dashboard | GET | `/api/dashboard/daily-summary` | 오늘 전체 사용 요약 조회 | 구현완료 |
 | AlertSetting | GET | `/api/alert-settings` | 하루 알림 설정 조회 | 예정 |
 | AlertSetting | PATCH | `/api/alert-settings` | 하루 알림 시간 수정 | 예정 |
@@ -1320,7 +1320,7 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 
 ## 13. UsageLog / UsageReason
 
-기능명세서 `REP101`, `REP102`, `REP106`, 정책 `REP-01`에 해당합니다.
+기능명세서 `REP101`, `REP102`, `REP106`, 정책 `REP-01`, `REP-07`에 해당합니다.
 
 공통 정책:
 
@@ -1477,30 +1477,38 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 | 403 | USAGE_REASON_TIME_FORBIDDEN | 입력 가능 시간대가 아님 |
 | 404 | MONITORED_APP_NOT_FOUND | 주의 앱이 없거나 본인 소유가 아님 |
 
-### GET `/api/usage-reasons/calendar?month=YYYY-MM`
+### GET `/api/usage-logs/calendar?month=YYYY-MM`
 
-월 단위로 사용 사유 입력 여부를 조회합니다.
+월 단위로 목표를 달성('O')한 날짜 목록을 조회합니다. 기능명세서 `REP106`, 정책 `REP-07`에 해당합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
+- 판정 기준(REP-07): 해당 날짜의 폰 전체 사용(주의 앱 사용량 합계)이 전체 목표 이하이고, 목표가 설정된 주의 앱이 모두 각자 목표 이하이면 그 날짜를 달성으로 봅니다.
+- 전체 목표(TotalGoal)가 없거나, 데이터가 없는 날짜는 달성 목록에 포함되지 않습니다.
+
+#### Query Parameters
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| month | string | Y | 조회할 월. `YYYY-MM` |
 
 #### Response 200
 
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "date": "2026-07-01",
-      "hasReason": true
-    },
-    {
-      "date": "2026-07-02",
-      "hasReason": false
-    }
-  ]
+  "data": {
+    "month": "2026-07",
+    "achievedDates": ["2026-07-01", "2026-07-03"]
+  }
 }
 ```
+
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
+| 400 | VALIDATION_ERROR | month 누락 또는 `YYYY-MM` 형식이 아님 |
 
 ## 14. Dashboard
 
