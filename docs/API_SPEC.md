@@ -8,6 +8,7 @@
 - 인증 방식: `Authorization: Bearer <accessToken>`
 
 > 이 문서는 백엔드 구현 기준 문서입니다. API 구현 시 이 문서의 경로, 필드명, 응답 형태, 에러 코드를 우선 기준으로 삼습니다.
+> 기획 기준은 Figma `폰쉼 PM 기획`의 `기능명세서 및 정책서` 페이지입니다. 기능 ID/정책 ID가 변경되면 이 문서의 매핑과 구현 상태를 함께 갱신합니다.
 
 ### 공통 구현 규칙
 
@@ -85,33 +86,48 @@
 | MonitoredApp | GET | `/api/monitored-apps/:id` | 주의 앱 단건 조회 | 구현완료 |
 | MonitoredApp | PATCH | `/api/monitored-apps/:id` | 주의 앱 수정 | 구현완료 |
 | MonitoredApp | DELETE | `/api/monitored-apps/:id` | 주의 앱 삭제 | 구현완료 |
-| Auth | POST | `/api/auth/google` | 구글 로그인/회원가입 | 예정 |
-| Auth | POST | `/api/auth/kakao` | 카카오 로그인/회원가입 | 예정 |
+| Auth | POST | `/api/auth/google` | 구글 로그인/회원가입 | 구현완료 |
+| Auth | POST | `/api/auth/kakao` | 카카오 로그인/회원가입 | 구현완료 |
 | Auth | POST | `/api/auth/logout` | 로그아웃 | 예정 |
 | Auth | POST | `/api/auth/link-account` | 동일 이메일 소셜 계정 연동 | 예정 |
-| Auth | POST | `/api/auth/recover-withdrawal` | 탈퇴 유예 계정 복구 | 예정 |
-| User | GET | `/api/users/me` | 내 프로필 조회 | 예정 |
+| Auth | DELETE | `/api/auth/withdraw` | 회원 탈퇴 요청 | 구현완료 |
+| User | GET | `/api/users/me` | 내 프로필 조회 | 구현완료 |
 | User | PATCH | `/api/users/me` | 내 이름/목표 문구 수정 | 예정 |
-| User | DELETE | `/api/users/me` | 회원 탈퇴 요청 | 예정 |
 | TotalGoal | POST | `/api/total-goals` | 전체 목표 생성/설정 | 구현완료 |
 | TotalGoal | GET | `/api/total-goals` | 전체 목표 조회 | 구현완료 |
 | TotalGoal | PATCH | `/api/total-goals` | 전체 목표 수정 | 구현완료 |
-| AppGoal | POST | `/api/app-goals` | 앱별 목표 생성/설정 | 예정 |
-| AppGoal | GET | `/api/app-goals?monitoredAppId=` | 앱별 목표 조회 | 예정 |
-| AppGoal | PATCH | `/api/app-goals/:id` | 앱별 목표 수정 | 예정 |
-| Reminder | POST | `/api/reminders` | 할 일 생성 | 예정 |
-| Reminder | GET | `/api/reminders?date=` | 날짜별 할 일 목록 조회 | 예정 |
-| Reminder | GET | `/api/reminders/:id` | 할 일 단건 조회 | 예정 |
-| Reminder | PATCH | `/api/reminders/:id` | 할 일 수정 | 예정 |
-| Reminder | DELETE | `/api/reminders/:id` | 할 일 삭제 | 예정 |
-| UsageLog | GET | `/api/usage-logs?date=` | 일별 주의 앱 사용량 조회 | 예정 |
-| UsageReason | POST | `/api/usage-reasons` | 사용 사유 입력 | 예정 |
+| AppGoal | POST | `/api/app-goals` | 앱별 목표 생성/설정 | 구현완료 |
+| AppGoal | GET | `/api/app-goals?monitoredAppId=` | 앱별 목표 조회 | 구현완료 |
+| AppGoal | PATCH | `/api/app-goals/:id` | 앱별 목표 수정 | 구현완료 |
+| AppGoal | DELETE | `/api/app-goals/:id` | 앱별 목표 삭제 | 구현완료 |
+| Reminder | POST | `/api/reminders` | 할 일 생성 | 구현완료 |
+| Reminder | GET | `/api/reminders?date=` | 날짜별 할 일 목록 조회 | 구현완료 |
+| Reminder | GET | `/api/reminders/:id` | 할 일 단건 조회 | 구현완료 |
+| Reminder | PATCH | `/api/reminders/:id` | 할 일 수정 | 구현완료 |
+| Reminder | DELETE | `/api/reminders/:id` | 할 일 삭제 | 구현완료 |
+| UsageLog | GET | `/api/usage-logs?date=` | 일별 주의 앱 사용량 조회 | 구현완료 |
+| UsageLog | GET | `/api/usage-logs/status` | 오늘 주의 앱 사용 현황 조회 | 구현완료 |
+| UsageLog | PUT | `/api/usage-logs` | 일별 주의 앱 사용량 기록/갱신 | 구현완료 |
+| UsageReason | POST | `/api/usage-reasons` | 사용 사유 입력 | 구현완료 |
 | UsageReason | GET | `/api/usage-reasons/calendar?month=` | 날짜별 사유 입력 여부 조회 | 예정 |
+| Dashboard | GET | `/api/dashboard/daily-summary` | 오늘 전체 사용 요약 조회 | 구현완료 |
 | AlertSetting | GET | `/api/alert-settings` | 하루 알림 설정 조회 | 예정 |
 | AlertSetting | PATCH | `/api/alert-settings` | 하루 알림 시간 수정 | 예정 |
 | Report | GET | `/api/reports/summary?range=` | 주간/월간 요약 조회 | 예정 |
 | AI | POST | `/api/ai/daily-feedback` | 일간 AI 피드백 생성 | 예정 |
 | AI | POST | `/api/ai/suggest-goal` | 목표 시간/횟수 AI 제안 | 예정 |
+
+### Figma 명세 반영 현황
+
+| Figma 영역 | 주요 기능 ID | 현재 API 반영 상태 |
+|---|---|---|
+| 회원가입/로그인 | `A101`, `A102` | Auth API에 반영 |
+| 온보딩/설정 | `SET101`~`SET110` | 주의 앱/전체 목표/앱별 목표 API로 분산 반영. 사용자 성별/나이, 온보딩 완료/스킵 상태는 API/DB 계약 추가 필요 |
+| 메인 | `MAIN101`~`MAIN105` | Dashboard, UsageLog, Reminder 조회 API로 반영 |
+| 리마인더 | `REM101`~`REM109` | Reminder API와 Socket.IO 동기화 계약에 반영 |
+| 리포트 | `REP101`~`REP107` | UsageLog/UsageReason, Report/AI, AlertSetting으로 분산 반영. 객관식 사용 사유 선택지와 일별 제안 저장 여부는 정책 확정 필요. 개정 이력상 `REP-08` 추가가 확인되었으나 세부 API 계약은 미정 |
+| 마이 | `MY101`~`MY106` | User/Auth API에 반영 |
+| 설정 수정 | `PREF101`~`PREF106` | 기존 개별 조회/수정 API로 일부 반영. 통합 설정 조회/저장 API는 미정 |
 
 ## 5. System
 
@@ -144,6 +160,7 @@
 - 같은 사용자 안에서 `packageName` 중복 등록 불가
 - 목록 정렬: `sortOrder asc`, `createdAt asc`
 - 본인 소유가 아닌 앱은 조회/수정/삭제 불가
+- 기기 설치 앱 목록 조회와 사용정보 접근권한 요청/거부 안내는 클라이언트 책임입니다.
 
 ### POST `/api/monitored-apps`
 
@@ -441,128 +458,51 @@
 구글 소셜 로그인/회원가입을 처리합니다.
 
 - 인증: 불필요
-- 상태: 예정
+- 상태: 구현완료
+- 클라이언트가 Google SDK로 발급받은 access token을 서버로 전달합니다.
 
 #### Request Body
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| providerUserId | string | Y | 구글 사용자 고유 ID |
-| email | string | Y | 구글 계정 이메일 |
-| name | string | Y | 사용자 이름 |
-| profileImage | string | N | 프로필 이미지 URL |
+| accessToken | string | Y | Google access token |
 
 #### Response 200
 
-기존 사용자 로그인 성공.
+로그인 또는 회원가입 성공.
 
 ```json
 {
   "success": true,
   "data": {
     "accessToken": "jwt-access-token",
-    "user": {
-      "id": "uuid",
-      "email": "user@example.com",
-      "name": "홍길동",
-      "profileImage": null,
-      "motivation": null,
-      "status": "ACTIVE"
-    },
     "isNewUser": false
   }
 }
 ```
 
-#### Response 201
-
-신규 사용자 가입 성공.
-
-```json
-{
-  "success": true,
-  "data": {
-    "accessToken": "jwt-access-token",
-    "user": {
-      "id": "uuid",
-      "email": "user@example.com",
-      "name": "홍길동",
-      "profileImage": null,
-      "motivation": null,
-      "status": "ACTIVE"
-    },
-    "isNewUser": true
-  }
-}
-```
-
 #### Errors
 
 | Status | Code | 설명 |
 |---|---|---|
-| 400 | VALIDATION_ERROR | 필수값 누락 |
-| 409 | ACCOUNT_LINK_REQUIRED | 동일 이메일의 다른 소셜 계정이 존재함 |
-| 409 | WITHDRAWAL_PENDING | 탈퇴 유예 계정이며 복구 확인이 필요함 |
-
-### POST `/api/auth/recover-withdrawal`
-
-탈퇴 유예 상태(`WITHDRAWAL_PENDING`)의 계정을 복구하고 로그인 토큰을 발급합니다.
-
-- 인증: 불필요
-- 상태: 예정
-- 탈퇴 요청 후 14일 이내인 계정만 복구할 수 있습니다.
-- 14일이 지난 계정은 복구하지 않고 신규 가입 플로우를 사용합니다.
-
-#### Request Body
-
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| provider | string | Y | `GOOGLE` 또는 `KAKAO` |
-| providerUserId | string | Y | 소셜 제공자 사용자 고유 ID |
-| email | string | Y | 소셜 계정 이메일 |
-
-#### Response 200
-
-```json
-{
-  "success": true,
-  "data": {
-    "accessToken": "jwt-access-token",
-    "user": {
-      "id": "uuid",
-      "email": "user@example.com",
-      "name": "홍길동",
-      "profileImage": null,
-      "motivation": null,
-      "status": "ACTIVE"
-    }
-  }
-}
-```
-
-#### Errors
-
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | VALIDATION_ERROR | 필수값 누락 또는 잘못된 provider |
-| 404 | USER_NOT_FOUND | 복구 가능한 탈퇴 유예 계정이 없음 |
-| 410 | WITHDRAWAL_EXPIRED | 탈퇴 유예 기간이 만료됨 |
+| 400 | ACCESS_TOKEN_REQUIRED | accessToken 누락 |
+| 403 | ACCOUNT_DELETED | 탈퇴 완료된 계정 |
+| 403 | WITHDRAWAL_PERIOD_EXPIRED | 탈퇴 유예 기간이 만료된 계정 |
+| 500 | INTERNAL_SERVER_ERROR | 소셜 사용자 정보 조회 또는 로그인 처리 실패 |
 
 ### POST `/api/auth/kakao`
 
 카카오 소셜 로그인/회원가입을 처리합니다.
 
 - 인증: 불필요
-- 상태: 예정
+- 상태: 구현완료
+- 클라이언트가 Kakao SDK로 발급받은 access token을 서버로 전달합니다.
 
 #### Request Body
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| providerUserId | string | Y | 카카오 사용자 고유 ID |
-| email | string | Y | 카카오 계정 이메일 |
-| name | string | N | 사용자 이름 |
-| profileImage | string | N | 프로필 이미지 URL |
+| accessToken | string | Y | Kakao access token |
 
 #### Response 200/201
 
@@ -571,14 +511,6 @@
   "success": true,
   "data": {
     "accessToken": "jwt-access-token",
-    "user": {
-      "id": "uuid",
-      "email": "user@example.com",
-      "name": "홍길동",
-      "profileImage": null,
-      "motivation": null,
-      "status": "ACTIVE"
-    },
     "isNewUser": true
   }
 }
@@ -588,9 +520,42 @@
 
 | Status | Code | 설명 |
 |---|---|---|
-| 400 | VALIDATION_ERROR | 필수값 누락 |
-| 409 | ACCOUNT_LINK_REQUIRED | 동일 이메일의 다른 소셜 계정이 존재함 |
-| 409 | WITHDRAWAL_PENDING | 탈퇴 유예 계정이며 복구 확인이 필요함 |
+| 400 | ACCESS_TOKEN_REQUIRED | accessToken 누락 |
+| 403 | ACCOUNT_DELETED | 탈퇴 완료된 계정 |
+| 403 | WITHDRAWAL_PERIOD_EXPIRED | 탈퇴 유예 기간이 만료된 계정 |
+| 500 | INTERNAL_SERVER_ERROR | 소셜 사용자 정보 조회 또는 로그인 처리 실패 |
+
+### DELETE `/api/auth/withdraw`
+
+회원 탈퇴를 요청합니다.
+
+- 인증: 필요
+- 상태: 구현완료
+- 즉시 영구 삭제하지 않고 14일 유예 상태(`WITHDRAWAL_PENDING`)로 변경합니다.
+- 탈퇴 유예 기간 내 동일 소셜 계정으로 다시 로그인하면 `ACTIVE` 상태로 자동 복구되고 `withdrawalRequestedAt`은 `null`로 초기화됩니다.
+- 탈퇴 유예 기간이 만료된 계정 또는 `DELETED` 계정은 로그인할 수 없습니다.
+
+#### Response 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "status": "WITHDRAWAL_PENDING",
+    "withdrawalRequestedAt": "2026-07-21T00:00:00.000Z"
+  }
+}
+```
+
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
+| 400 | ALREADY_WITHDRAWAL_PENDING | 이미 탈퇴 처리 중인 계정 |
+| 400 | USER_ALREADY_DELETED | 이미 삭제된 계정 |
+| 401 | UNAUTHORIZED | 인증 토큰 누락 |
+| 401 | INVALID_TOKEN | 유효하지 않은 인증 토큰 |
+| 404 | USER_NOT_FOUND | 사용자를 찾을 수 없음 |
 
 ### POST `/api/auth/link-account`
 
@@ -646,7 +611,7 @@
 내 프로필 정보를 조회합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Response 200
 
@@ -654,17 +619,19 @@
 {
   "success": true,
   "data": {
-    "id": "uuid",
     "email": "user@example.com",
     "name": "홍길동",
     "profileImage": null,
-    "motivation": "오늘은 2시간만 사용하기",
-    "status": "ACTIVE",
-    "createdAt": "2026-07-07T00:00:00.000Z",
-    "updatedAt": "2026-07-07T00:00:00.000Z"
+    "motivation": "오늘은 2시간만 사용하기"
   }
 }
 ```
+
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
+| 404 | USER_NOT_FOUND | 사용자를 찾을 수 없음 |
 
 ### PATCH `/api/users/me`
 
@@ -704,27 +671,17 @@
 |---|---|---|
 | 400 | VALIDATION_ERROR | 빈 이름 또는 100자 초과 motivation |
 
-### DELETE `/api/users/me`
-
-회원 탈퇴를 요청합니다.
-
-- 인증: 필요
-- 상태: 예정
-- 즉시 영구 삭제하지 않고 14일 유예 상태로 변경합니다.
-
-#### Response 204
-
-응답 body 없음.
-
 ## 10. TotalGoal
 
-기능명세서 `SET105`, `MAIN103`, 정책 `SET-03`에 해당합니다.
+기능명세서 `SET105`, `MAIN103`, `PREF101`, `PREF103`, 정책 `SET-03`, `PR-01`, `PR-03`에 해당합니다.
 
 공통 정책:
 
 - 인증 필요
 - 사용자당 전체 목표는 1개입니다.
 - `targetMinutes`는 10~1430분만 허용합니다.
+- 설정/PREF 화면 진입 시 클라이언트는 서버 DB의 최신 목표 값을 조회해 화면에 바인딩합니다.
+- 전체 목표가 변경되면 클라이언트 스크린타임 엔진은 최신 제한 정책을 다시 적용해야 합니다.
 
 ### POST `/api/total-goals`
 
@@ -832,7 +789,7 @@
 
 ## 11. AppGoal
 
-기능명세서 `SET106`, `SET107`, `SET108`, `MAIN104`, 정책 `SET-04`, `SET-05`에 해당합니다.
+기능명세서 `SET106`, `SET107`, `SET108`, `MAIN104`, `PREF101`, `PREF104`, 정책 `SET-04`, `SET-05`, `PR-01`, `PR-02`, `PR-03`에 해당합니다.
 
 공통 정책:
 
@@ -842,13 +799,14 @@
 - `targetMinutes`는 10~1430분만 허용합니다.
 - `targetCount`는 1 이상만 허용합니다.
 - `goalReason`은 공백 포함 최대 100자입니다.
+- 앱별 목표 수정/삭제 후 클라이언트는 최신 제한 정책으로 스크린타임 엔진을 다시 적용해야 합니다.
 
 ### POST `/api/app-goals`
 
 앱별 목표를 생성합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Request Body
 
@@ -893,7 +851,7 @@
 특정 주의 앱의 목표를 조회합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Response 200
 
@@ -926,7 +884,7 @@
 앱별 목표를 수정합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Request Body
 
@@ -965,37 +923,212 @@
 | 400 | VALIDATION_ERROR | 수정 가능한 필드가 하나도 없음 |
 | 404 | APP_GOAL_NOT_FOUND | 앱 목표가 없거나 본인 소유가 아님 |
 
+### DELETE `/api/app-goals/:id`
+
+앱별 목표를 삭제합니다.
+
+- 인증: 필요
+- 상태: 구현완료
+- 본인 소유 주의 앱에 연결된 목표만 삭제할 수 있습니다.
+
+#### Response 204
+
+응답 body 없음.
+
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
+| 404 | APP_GOAL_NOT_FOUND | 앱 목표가 없거나 본인 소유가 아님 |
+
 ## 12. Reminder
 
-기능명세서 `REM102`~`REM109`, `MAIN105`, 정책 `REM-01`~`REM-06`에 해당합니다.
+기능명세서 `REM101`~`REM109`, 서비스 정책 `REM-01`~`REM-10`에 해당합니다.
 
-공통 정책:
+### Common Rules
 
-- 인증 필요
-- 과거 날짜 일정도 조회/수정 가능하지만 과거 제한 정책은 동작하지 않습니다.
-- 같은 사용자/같은 날짜 안에서 일정 시간대는 서로 중복될 수 없습니다.
-- 일정은 최소 1분 이상이어야 합니다.
-- `SPECIFIC_APP` 제한은 등록된 주의 앱만 선택할 수 있습니다.
+- 인증이 필요합니다. `Authorization: Bearer <accessToken>`
+- `date`는 `YYYY-MM-DD` 형식이며, 실제 존재하는 캘린더 날짜만 허용합니다.
+- `startTime`, `endTime`은 timezone을 포함한 ISO datetime string만 허용합니다.
+  - 허용 예: `2026-07-16T09:00:00.000Z`
+  - 허용 예: `2026-07-16T09:00:00+09:00`
+  - 거부 예: `2026-07-16T09:00:00`
+- `startTime`, `endTime`은 KST 기준으로 `date`와 같은 날짜여야 합니다.
+  - 예: `date=2026-07-16`, `startTime=2026-07-15T15:00:00.000Z`는 KST 기준 2026-07-16 00:00이므로 허용합니다.
+  - 예: `date=2026-07-16`, `startTime=2026-07-16T15:00:00.000Z`는 KST 기준 2026-07-17 00:00이므로 거부합니다.
+- `title`은 공백 포함 최대 20자입니다. 빈 문자열 또는 공백만 있는 값은 거부합니다.
+- 하나의 일정은 최소 1분 이상이어야 합니다.
+- 같은 사용자, 같은 날짜 안에서는 일정 시간대가 서로 중복될 수 없습니다.
+- 경계 시간이 맞닿는 일정은 중복으로 보지 않습니다.
+  - 예: `12:00~13:00`, `13:00~14:00`은 허용합니다.
+- `restrictMode`는 `NONE`, `FULL_PHONE`, `SPECIFIC_APP`만 허용합니다.
+- `SPECIFIC_APP`은 사용자가 사전에 등록한 본인 소유 주의 앱만 제한 대상으로 지정할 수 있습니다.
+- `NONE`, `FULL_PHONE` 모드에서는 전달된 `restrictedAppIds`가 저장되지 않고 빈 배열로 정리됩니다.
+
+### Restriction Execution Contract
+
+리마인더의 제한 실행은 백엔드와 클라이언트 스크린타임 엔진이 역할을 나누어 처리합니다.
+
+#### 책임 범위
+
+| 구분 | 책임 |
+|---|---|
+| 백엔드 | 리마인더 CRUD, 시간/중복/제한 앱 소유권 검증, 제한 정책 데이터 제공 |
+| 클라이언트 | 일정 시작/종료 시각 감지, 스크린타임 엔진 실행, 앱 차단 화면 노출, 제한 해제 |
+
+백엔드는 실제 스마트폰 잠금 또는 앱 차단을 직접 수행하지 않습니다.
+
+#### 제한 정책 데이터
+
+클라이언트는 Reminder API 응답의 다음 필드를 제한 실행 계약으로 사용합니다.
+
+| 필드 | 설명 |
+|---|---|
+| id | 제한 예약 작업을 식별하기 위한 리마인더 ID |
+| userId | 사용자 식별자 |
+| date | 일정 날짜 |
+| startTime | 제한 시작 시각 |
+| endTime | 제한 종료 시각 |
+| restrictMode | 제한 모드. `NONE`, `FULL_PHONE`, `SPECIFIC_APP` |
+| restrictedAppIds | `SPECIFIC_APP`에서 제한할 주의 앱 ID 목록 |
+
+모드별 실행 기준은 다음과 같습니다.
+
+| restrictMode | 실행 기준 |
+|---|---|
+| `NONE` | 제한 실행 없음 |
+| `FULL_PHONE` | `startTime`부터 `endTime`까지 필수 앱을 제외한 앱 실행을 전면 제한 |
+| `SPECIFIC_APP` | `restrictedAppIds`에 포함된 주의 앱 진입 시 차단 화면 노출 |
+
+`SPECIFIC_APP`에서 실제 앱 차단에 패키지명이 필요한 경우, 클라이언트는 `restrictedAppIds`를 기준으로 주의 앱 API를 조회해 패키지명을 해석합니다.
+
+#### 시작/종료 및 과거 일정 기준
+
+- 제한 실행 대상은 현재 시각 이후에 도래하는 일정입니다.
+- 과거 일정은 조회와 수정은 가능하지만 제한 실행 대상에서 제외합니다.
+- 일정 시작 시점에 클라이언트는 `restrictMode`에 따라 제한을 적용합니다.
+- 일정 종료 시점에 클라이언트는 해당 리마인더로 인해 적용한 제한을 해제합니다.
+- 같은 사용자, 같은 날짜의 리마인더 시간대는 중복 저장될 수 없으므로, 동시에 활성화되는 리마인더는 없다는 전제를 둡니다.
+
+#### 수정/삭제 시 갱신 기준
+
+- 리마인더가 생성되면 클라이언트는 해당 날짜의 리마인더 목록을 재조회하거나 신규 제한 예약을 등록합니다.
+- 리마인더가 수정되면 클라이언트는 기존 예약을 취소하고 최신 응답 데이터 기준으로 다시 예약합니다.
+- 리마인더가 삭제되면 클라이언트는 해당 리마인더의 예약 작업을 취소합니다.
+- 삭제된 리마인더가 현재 제한 실행 중이었다면 클라이언트는 해당 리마인더로 적용한 제한을 해제합니다.
+- 오늘 날짜에 영향을 주는 리마인더 변경은 Socket.IO 동기화 이벤트를 발행하므로, 클라이언트는 이벤트 수신 후 관련 예약 작업과 오늘 목록을 갱신합니다.
+
+### MAIN105 Sync Contract
+
+리마인더 변경 사항은 메인 화면의 `오늘 할 일` 영역과 동기화되어야 합니다.
+
+#### 동기화 책임 범위
+
+| 구분 | 책임 |
+|---|---|
+| 백엔드 | 리마인더 생성/수정/삭제 후 동기화 이벤트 또는 재조회 가능한 최신 데이터 제공 |
+| 클라이언트 | 이벤트 수신 또는 API 응답 이후 오늘 할 일 목록 갱신, 재접속 시 목록 재조회 |
+
+현재 Socket.IO 서버는 연결 기반을 제공하며, KST 기준 오늘 날짜에 영향을 주는 리마인더 생성/수정/삭제 성공 후 `reminder.created`, `reminder.updated`, `reminder.deleted` 이벤트를 발행합니다. 이벤트 payload의 `requiresRefetch`는 `true`이므로 클라이언트는 이벤트 수신 후 오늘 목록을 재조회합니다.
+
+#### 동기화 대상 기준
+
+- KST 기준 오늘 날짜의 리마인더 생성/수정/삭제는 MAIN105 동기화 대상입니다.
+- 과거 또는 미래 날짜의 리마인더 변경은 MAIN105 즉시 동기화 대상이 아닙니다.
+- 수정 전 날짜와 수정 후 날짜 중 하나라도 KST 기준 오늘이면 MAIN105 동기화 대상입니다.
+  - 오늘 일정이 다른 날짜로 이동한 경우 오늘 목록에서 제거되어야 합니다.
+  - 다른 날짜 일정이 오늘로 이동한 경우 오늘 목록에 추가되어야 합니다.
+- 클라이언트는 동기화 이벤트를 놓쳤거나 재접속한 경우 `GET /api/reminders?date=<KST 오늘>`로 오늘 목록을 재조회합니다.
+
+#### 이벤트명
+
+Socket.IO 구현 시 다음 이벤트명을 사용합니다.
+
+| 이벤트명 | 발생 시점 |
+|---|---|
+| `reminder.created` | 리마인더 생성 성공 후 |
+| `reminder.updated` | 리마인더 수정 성공 후 |
+| `reminder.deleted` | 리마인더 삭제 성공 후 |
+
+#### 이벤트 Payload
+
+생성/수정/삭제 이벤트 payload는 다음 형식을 사용합니다.
+
+```json
+{
+  "event": "reminder.created",
+  "reason": "today-reminder-changed",
+  "requiresRefetch": true
+}
+```
+
+| 필드 | 설명 |
+|---|---|
+| event | 이벤트명 |
+| reason | 클라이언트가 갱신 목적을 구분하기 위한 문자열. 기본값 `today-reminder-changed` |
+| requiresRefetch | `true`이면 클라이언트는 오늘 할 일 목록을 재조회합니다. 기본 계약은 `true`입니다. |
+
+#### 재접속 및 누락 이벤트 대응
+
+- 클라이언트가 Socket.IO에 연결되면 서버는 기존 `connected` 이벤트로 연결 여부를 알립니다.
+- 재접속 직후 클라이언트는 `GET /api/reminders?date=<KST 오늘>`을 호출해 MAIN105 목록을 최신화합니다.
+- 이벤트 payload의 `requiresRefetch`가 `true`이면 클라이언트는 이벤트에 포함된 단일 데이터만 신뢰하지 않고 오늘 목록을 재조회합니다.
+- 이벤트가 중복 수신되어도 클라이언트는 `reminder.id` 기준으로 목록을 갱신하거나 재조회 결과로 덮어써야 합니다.
+
+### Reminder Display Contract
+
+리마인더 목록과 메인 화면의 오늘 할 일 영역은 같은 Reminder API 응답 데이터를 사용하되, 화면별 표시 책임은 클라이언트가 가집니다.
+
+#### 제목 표시 기준
+
+- 백엔드는 `title` 원본 문자열을 저장하고 응답합니다.
+- 백엔드는 화면 표시를 위한 말줄임표(`...`)를 저장하거나 응답값에 삽입하지 않습니다.
+- 클라이언트는 화면 폭, 폰트, 버튼 영역에 따라 필요한 경우 `title`을 한 줄로 표시하고 초과 텍스트를 말줄임표로 처리합니다.
+- 말줄임표는 표시 레이어에서만 적용하며, 수정 화면이나 재저장 요청에는 백엔드가 응답한 원본 `title`을 사용합니다.
+
+#### 리마인더 목록 표시 기준
+
+- 리마인더 목록의 각 항목 제목은 한 줄 고정을 기본 표시 정책으로 사용합니다.
+- 제목 영역은 수정 버튼 또는 드래그 핸들 영역과 분리되어야 합니다.
+- 제목이 길어져도 수정 버튼, 드래그 핸들, 시간/제한 상태 표시 영역을 침범하지 않아야 합니다.
+- 항목의 드래그 가능 영역이 있는 경우, 텍스트 선택 또는 수정 버튼 터치 영역과 충돌하지 않도록 별도 터치 영역을 둡니다.
+
+#### MAIN105 오늘 할 일 표시 기준
+
+- MAIN105 오늘 할 일 영역도 Reminder API의 원본 `title`을 기준으로 목록을 구성합니다.
+- 제한 버튼 또는 상태 버튼이 있는 화면에서는 버튼 영역을 고정하고, 제목 텍스트 영역은 남은 폭 안에서만 렌더링합니다.
+- 제목이 길어도 제한 버튼, 완료/수정 버튼, 시간 표시와 겹치지 않아야 합니다.
+- 화면 표시상 잘린 제목이 필요하면 클라이언트가 한 줄 말줄임표를 적용하고, 상세/수정 화면에서는 원본 제목을 표시합니다.
 
 ### POST `/api/reminders`
 
 할 일을 생성합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Request Body
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
 | date | string | Y | 일정 날짜. `YYYY-MM-DD` 형식의 실제 존재 날짜 |
-| title | string | Y | 일정 이름 |
-| startTime | string | Y | 시작 시각. timezone을 포함한 ISO datetime string. 예: `2026-07-07T09:00:00.000Z` |
-| endTime | string | Y | 종료 시각. timezone을 포함한 ISO datetime string. 예: `2026-07-07T10:00:00.000Z` |
+| title | string | Y | 일정 이름. 공백 포함 최대 20자 |
+| startTime | string | Y | 시작 시각. timezone을 포함한 ISO datetime string |
+| endTime | string | Y | 종료 시각. timezone을 포함한 ISO datetime string |
 | restrictMode | string | N | `NONE`, `FULL_PHONE`, `SPECIFIC_APP`. 기본값 `NONE` |
 | restrictedAppIds | string[] | N | `SPECIFIC_APP`일 때 제한할 주의 앱 ID 목록 |
 
-- `startTime`, `endTime`은 KST 기준으로 `date`와 같은 날짜여야 합니다.
+#### Request Example
+
+```json
+{
+  "date": "2026-07-16",
+  "title": "postman test",
+  "startTime": "2026-07-16T12:00:00.000Z",
+  "endTime": "2026-07-16T13:00:00.000Z",
+  "restrictMode": "NONE"
+}
+```
 
 #### Response 201
 
@@ -1005,14 +1138,14 @@
   "data": {
     "id": "uuid",
     "userId": "uuid",
-    "date": "2026-07-07",
-    "title": "운동",
-    "startTime": "2026-07-07T09:00:00.000Z",
-    "endTime": "2026-07-07T10:00:00.000Z",
-    "restrictMode": "SPECIFIC_APP",
-    "restrictedAppIds": ["uuid"],
-    "createdAt": "2026-07-07T00:00:00.000Z",
-    "updatedAt": "2026-07-07T00:00:00.000Z"
+    "date": "2026-07-16T00:00:00.000Z",
+    "title": "postman test",
+    "startTime": "2026-07-16T12:00:00.000Z",
+    "endTime": "2026-07-16T13:00:00.000Z",
+    "restrictMode": "NONE",
+    "restrictedAppIds": [],
+    "createdAt": "2026-07-16T08:12:17.761Z",
+    "updatedAt": "2026-07-16T08:12:17.761Z"
   }
 }
 ```
@@ -1021,10 +1154,10 @@
 
 | Status | Code | 설명 |
 |---|---|---|
-| 400 | VALIDATION_ERROR | 필수값 누락 |
-| 400 | INVALID_TIME_RANGE | 종료 시각이 시작 시각보다 빠르거나 일정이 1분 미만 |
-| 400 | INVALID_RESTRICT_MODE | 제한 모드가 올바르지 않음 |
-| 400 | INVALID_RESTRICTED_APP_IDS | 특정 앱 제한인데 제한 앱이 없거나 유효하지 않음 |
+| 400 | VALIDATION_ERROR | 필수값 누락, 빈 문자열, 제목 20자 초과, 날짜/시간 형식 오류 |
+| 400 | INVALID_TIME_RANGE | 종료 시각이 시작 시각보다 빠르거나, 일정이 1분 미만이거나, KST 기준 날짜가 `date`와 다름 |
+| 400 | INVALID_RESTRICT_MODE | 제한 모드가 `NONE`, `FULL_PHONE`, `SPECIFIC_APP` 중 하나가 아님 |
+| 400 | INVALID_RESTRICTED_APP_IDS | `SPECIFIC_APP`인데 제한 앱 목록이 없거나, 본인 소유 주의 앱이 아님 |
 | 409 | REMINDER_TIME_OVERLAP | 같은 날짜에 겹치는 일정이 있음 |
 
 ### GET `/api/reminders?date=YYYY-MM-DD`
@@ -1032,9 +1165,15 @@
 날짜별 할 일 목록을 조회합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 - `date`가 없으면 KST 기준 오늘 날짜를 기본값으로 사용합니다.
 - 정렬: `startTime asc`, `endTime asc`, `createdAt asc`
+
+#### Query Parameters
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| date | string | N | 조회 날짜. `YYYY-MM-DD` 형식의 실제 존재 날짜 |
 
 #### Response 200
 
@@ -1045,25 +1184,32 @@
     {
       "id": "uuid",
       "userId": "uuid",
-      "date": "2026-07-07",
-      "title": "운동",
-      "startTime": "2026-07-07T09:00:00.000Z",
-      "endTime": "2026-07-07T10:00:00.000Z",
-      "restrictMode": "SPECIFIC_APP",
-      "restrictedAppIds": ["uuid"],
-      "createdAt": "2026-07-07T00:00:00.000Z",
-      "updatedAt": "2026-07-07T00:00:00.000Z"
+      "date": "2026-07-16T00:00:00.000Z",
+      "title": "postman test",
+      "startTime": "2026-07-16T12:00:00.000Z",
+      "endTime": "2026-07-16T13:00:00.000Z",
+      "restrictMode": "NONE",
+      "restrictedAppIds": [],
+      "createdAt": "2026-07-16T08:12:17.761Z",
+      "updatedAt": "2026-07-16T08:12:17.761Z"
     }
   ]
 }
 ```
+
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
+| 400 | VALIDATION_ERROR | `date` 형식이 `YYYY-MM-DD`가 아니거나 실제 존재하지 않는 날짜 |
 
 ### GET `/api/reminders/:id`
 
 할 일 단건을 조회합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
+- 본인 소유 할 일만 조회할 수 있습니다.
 
 #### Response 200
 
@@ -1073,14 +1219,14 @@
   "data": {
     "id": "uuid",
     "userId": "uuid",
-    "date": "2026-07-07",
-    "title": "운동",
-    "startTime": "2026-07-07T09:00:00.000Z",
-    "endTime": "2026-07-07T10:00:00.000Z",
-    "restrictMode": "SPECIFIC_APP",
-    "restrictedAppIds": ["uuid"],
-    "createdAt": "2026-07-07T00:00:00.000Z",
-    "updatedAt": "2026-07-07T00:00:00.000Z"
+    "date": "2026-07-16T00:00:00.000Z",
+    "title": "postman test",
+    "startTime": "2026-07-16T12:00:00.000Z",
+    "endTime": "2026-07-16T13:00:00.000Z",
+    "restrictMode": "NONE",
+    "restrictedAppIds": [],
+    "createdAt": "2026-07-16T08:12:17.761Z",
+    "updatedAt": "2026-07-16T08:12:17.761Z"
   }
 }
 ```
@@ -1089,30 +1235,39 @@
 
 | Status | Code | 설명 |
 |---|---|---|
-| 404 | REMINDER_NOT_FOUND | 일정이 없거나 본인 소유가 아님 |
+| 404 | REMINDER_NOT_FOUND | 할 일이 없거나 본인 소유가 아님 |
 
 ### PATCH `/api/reminders/:id`
 
 할 일을 수정합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 - 요청 body는 `POST /api/reminders`와 동일한 필드를 부분적으로 허용합니다.
+- 최소 1개 이상의 수정 가능한 필드가 필요합니다.
+- 요청하지 않은 필드는 기존 값을 유지한 뒤 전체 정책을 다시 검증합니다.
 - `restrictedAppIds`가 전달되면 기존 제한 앱 목록을 전체 교체합니다.
-- `restrictMode`를 `NONE` 또는 `FULL_PHONE`으로 변경하면 `restrictedAppIds`는 빈 배열로 저장합니다.
+- `restrictMode`를 `NONE` 또는 `FULL_PHONE`으로 변경하면 `restrictedAppIds`는 빈 배열로 저장됩니다.
+- `restrictMode`가 `SPECIFIC_APP`인 경우, 기존 또는 요청으로 확정된 `restrictedAppIds`가 1개 이상 있어야 합니다.
 
 #### Request Body
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
 | date | string | N | 일정 날짜. `YYYY-MM-DD` 형식의 실제 존재 날짜 |
-| title | string | N | 일정 이름 |
-| startTime | string | N | 시작 시각. timezone을 포함한 ISO datetime string. 예: `2026-07-07T09:00:00.000Z` |
-| endTime | string | N | 종료 시각. timezone을 포함한 ISO datetime string. 예: `2026-07-07T10:00:00.000Z` |
+| title | string | N | 일정 이름. 공백 포함 최대 20자 |
+| startTime | string | N | 시작 시각. timezone을 포함한 ISO datetime string |
+| endTime | string | N | 종료 시각. timezone을 포함한 ISO datetime string |
 | restrictMode | string | N | `NONE`, `FULL_PHONE`, `SPECIFIC_APP` |
 | restrictedAppIds | string[] | N | `SPECIFIC_APP`일 때 제한할 주의 앱 ID 목록 |
 
-- `startTime`, `endTime`을 변경하는 경우 KST 기준으로 적용되는 `date`와 같은 날짜여야 합니다.
+#### Request Example
+
+```json
+{
+  "title": "updated postman"
+}
+```
 
 #### Response 200
 
@@ -1122,14 +1277,14 @@
   "data": {
     "id": "uuid",
     "userId": "uuid",
-    "date": "2026-07-07",
-    "title": "독서",
-    "startTime": "2026-07-07T20:00:00.000Z",
-    "endTime": "2026-07-07T21:00:00.000Z",
-    "restrictMode": "FULL_PHONE",
+    "date": "2026-07-16T00:00:00.000Z",
+    "title": "updated postman",
+    "startTime": "2026-07-16T12:00:00.000Z",
+    "endTime": "2026-07-16T13:00:00.000Z",
+    "restrictMode": "NONE",
     "restrictedAppIds": [],
-    "createdAt": "2026-07-07T00:00:00.000Z",
-    "updatedAt": "2026-07-07T01:00:00.000Z"
+    "createdAt": "2026-07-16T08:12:17.761Z",
+    "updatedAt": "2026-07-16T08:15:35.208Z"
   }
 }
 ```
@@ -1138,11 +1293,11 @@
 
 | Status | Code | 설명 |
 |---|---|---|
-| 400 | VALIDATION_ERROR | 수정 가능한 필드가 하나도 없음 |
-| 400 | INVALID_TIME_RANGE | 종료 시각이 시작 시각보다 빠르거나 일정이 1분 미만 |
-| 400 | INVALID_RESTRICT_MODE | 제한 모드가 올바르지 않음 |
-| 400 | INVALID_RESTRICTED_APP_IDS | 특정 앱 제한인데 제한 앱이 없거나 유효하지 않음 |
-| 404 | REMINDER_NOT_FOUND | 일정이 없거나 본인 소유가 아님 |
+| 400 | VALIDATION_ERROR | 수정 가능한 필드가 없거나, 빈 문자열, 제목 20자 초과, 날짜/시간 형식 오류 |
+| 400 | INVALID_TIME_RANGE | 종료 시각이 시작 시각보다 빠르거나, 일정이 1분 미만이거나, KST 기준 날짜가 `date`와 다름 |
+| 400 | INVALID_RESTRICT_MODE | 제한 모드가 `NONE`, `FULL_PHONE`, `SPECIFIC_APP` 중 하나가 아님 |
+| 400 | INVALID_RESTRICTED_APP_IDS | `SPECIFIC_APP`인데 제한 앱 목록이 없거나, 본인 소유 주의 앱이 아님 |
+| 404 | REMINDER_NOT_FOUND | 할 일이 없거나 본인 소유가 아님 |
 | 409 | REMINDER_TIME_OVERLAP | 같은 날짜에 겹치는 일정이 있음 |
 
 ### DELETE `/api/reminders/:id`
@@ -1150,22 +1305,38 @@
 할 일을 삭제합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
+- 본인 소유 할 일만 삭제할 수 있습니다.
 
 #### Response 204
 
 응답 body 없음.
 
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
+| 404 | REMINDER_NOT_FOUND | 할 일이 없거나 본인 소유가 아님 |
+
 ## 13. UsageLog / UsageReason
 
 기능명세서 `REP101`, `REP102`, `REP106`, 정책 `REP-01`에 해당합니다.
+
+공통 정책:
+
+- 주의 앱 사용 시간/진입 횟수는 클라이언트 스크린타임 엔진이 수집하고 백엔드는 일별 집계 저장/조회 계약을 제공합니다.
+- 주의 앱 진입 시 사용 이유 입력 팝업 호출은 클라이언트 책임입니다.
+- 같은 주의 앱을 종료 후 1분 이내 재진입하면 사용 이유를 다시 입력하지 않아도 됩니다.
+- 사용 이유를 선택하지 않고 팝업을 닫으면 클라이언트는 `기타` 사유로 저장합니다.
+- 현재 API의 `reason`은 문자열 자유 입력 계약입니다. Figma 정책의 객관식 선택지 코드가 확정되면 enum/code 필드 추가를 검토합니다.
 
 ### GET `/api/usage-logs?date=YYYY-MM-DD`
 
 일별 주의 앱 사용량을 조회합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
+- `date`가 없으면 KST 기준 오늘 날짜를 사용합니다.
 
 #### Response 200
 
@@ -1187,12 +1358,84 @@
 }
 ```
 
+### GET `/api/usage-logs/status`
+
+MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
+
+- 인증: 필요
+- 상태: 구현완료
+- KST 기준 오늘 날짜의 사용량과 앱별 목표를 함께 반환합니다.
+
+#### Response 200
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "monitoredAppId": "uuid",
+      "appName": "YouTube",
+      "packageName": "com.google.android.youtube",
+      "appIcon": null,
+      "sortOrder": 0,
+      "targetMinutes": 60,
+      "targetCount": 5,
+      "usedMinutes": 35,
+      "entryCount": 4
+    }
+  ]
+}
+```
+
+### PUT `/api/usage-logs`
+
+안드로이드 클라이언트가 일별 주의 앱 사용량을 기록하거나 갱신합니다.
+
+- 인증: 필요
+- 상태: 구현완료
+- 같은 사용자, 같은 주의 앱, 같은 날짜의 기록은 upsert로 갱신됩니다.
+- `date`가 없으면 KST 기준 오늘 날짜를 사용합니다.
+
+#### Request Body
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| monitoredAppId | string | Y | 주의 앱 ID |
+| date | string | N | 사용 날짜. `YYYY-MM-DD`. 없으면 KST 오늘 |
+| usedMinutes | number | Y | 누적 사용 시간(분) |
+| entryCount | number | Y | 누적 앱 진입 횟수 |
+
+#### Response 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "userId": "uuid",
+    "monitoredAppId": "uuid",
+    "date": "2026-07-07T00:00:00.000Z",
+    "usedMinutes": 35,
+    "entryCount": 4,
+    "createdAt": "2026-07-07T00:00:00.000Z",
+    "updatedAt": "2026-07-07T01:00:00.000Z"
+  }
+}
+```
+
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
+| 400 | VALIDATION_ERROR | 필수값 누락, 타입 불일치, 잘못된 날짜 또는 음수 사용량 |
+| 404 | MONITORED_APP_NOT_FOUND | 주의 앱이 없거나 본인 소유가 아님 |
+
 ### POST `/api/usage-reasons`
 
 특정 앱 사용 시간 블록에 대한 사용 사유를 입력합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 - 입력/수정 가능 시간: 당일 22:00 ~ 익일 10:00
 
 #### Request Body
@@ -1259,7 +1502,34 @@
 }
 ```
 
-## 14. AlertSetting
+## 14. Dashboard
+
+메인 화면에서 사용할 오늘 전체 사용 요약을 조회합니다.
+
+### GET `/api/dashboard/daily-summary`
+
+KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조회합니다.
+
+- 인증: 필요
+- 상태: 구현완료
+- 전체 목표가 없으면 `targetMinutes`, `remainingMinutes`는 `null`이고 `isExceeded`는 `false`입니다.
+
+#### Response 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "date": "2026-07-07",
+    "targetMinutes": 120,
+    "usedMinutes": 35,
+    "remainingMinutes": 85,
+    "isExceeded": false
+  }
+}
+```
+
+## 15. AlertSetting
 
 기능명세서 `REP107`, 정책 `REP-04`, `REP-05`에 해당합니다.
 
@@ -1269,6 +1539,7 @@
 - 알림 수신은 항상 ON을 기본으로 합니다.
 - 알림 시간은 22:00~23:59 사이만 허용합니다.
 - DB 저장값은 `alertTimeMinutes`입니다.
+- 데일리 리포트 알림 발송과 푸시 토큰 관리는 별도 알림 인프라 계약이 필요합니다.
 
 ### GET `/api/alert-settings`
 
@@ -1327,9 +1598,16 @@
 |---|---|---|
 | 400 | INVALID_ALERT_TIME | 1320~1439 범위를 벗어남 |
 
-## 15. Report / AI
+## 16. Report / AI
 
 기능명세서 `REP103`, `REP104`, `REP105`, 정책 `REP-02`, `REP-03`에 해당합니다.
+
+공통 정책:
+
+- 제안 팝업은 금일 스마트폰 사용 시간, 앱 진입 횟수, 사용 이유를 종합 분석한 문구를 노출합니다.
+- 요약 분석은 주간/월간 범위에서 사용 이유 데이터를 집계하고, 앱별 색상 표현은 클라이언트 표시 책임으로 둡니다.
+- 목표 달성 캘린더 표시는 전체 폰 목표와 주의 앱 목표를 모두 만족한 날짜에만 달성으로 간주합니다.
+- 현재 `GET /api/reports/summary`는 요약 집계 계약이며, 일별 제안 결과를 장기 저장하는 API/DB 계약은 아직 없습니다.
 
 ### GET `/api/reports/summary?range=week|month&date=YYYY-MM-DD`
 
@@ -1431,17 +1709,17 @@
 }
 ```
 
-## 16. 구현 순서 권장안
+## 17. 구현 순서 권장안
 
 1. Auth/User
 2. TotalGoal
 3. AppGoal
 4. AlertSetting
-5. Reminder
-6. UsageLog/UsageReason
+5. UsageLog/UsageReason
+6. Reminder
 7. Report/AI
 
-## 17. 문서 운영 규칙
+## 18. 문서 운영 규칙
 
 - 도메인 구현 PR은 이 문서의 endpoint, request, response, error code를 기준으로 작성합니다.
 - 구현 중 정책 변경이 필요하면 코드보다 먼저 이 문서를 수정하고 PR 설명에 변경 이유를 남깁니다.

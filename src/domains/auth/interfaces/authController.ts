@@ -2,7 +2,9 @@
 import { Router, type Request, type Response } from 'express';
 import asyncHandler from '../../../shared/utils/asyncHandler';
 import { BadRequestError } from '../../../shared/errors/appError';
+import { authenticate } from '../../../shared/middlewares/authMiddleware';
 import { socialLogin } from '../application/socialLoginService';
+import { withdrawUser } from '../application/withdrawUserService';
 
 const router = Router();
 
@@ -15,6 +17,7 @@ function validateAccessToken(req: Request): string {
 
   return accessToken;
 }
+
 
 router.post(
   '/kakao',
@@ -30,6 +33,16 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const accessToken = validateAccessToken(req);
     const result = await socialLogin('GOOGLE', accessToken);
+    res.status(200).json({ success: true, data: result });
+  })
+);
+
+router.delete(
+  '/withdraw',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    const result = await withdrawUser(userId);
     res.status(200).json({ success: true, data: result });
   })
 );
