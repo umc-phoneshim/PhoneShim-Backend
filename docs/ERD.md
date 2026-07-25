@@ -108,7 +108,22 @@ Google/Kakao 등 소셜 로그인 계정을 사용자와 연결하는 테이블�
 | created_at | timestamp | 기록 생성 시각 |
 | updated_at | timestamp | 기록 수정 시각 |
 
-> 앱 실행 세션 단위 저장이 필요해지면 `usage_sessions` 테이블을 별도로 추가합니다. v1에서는 하루 집계 기준으로 유지합니다.
+> `usage_logs`는 하루 집계 테이블이며, 시간대별 사용 구간이 필요한 `REP101` 타임테이블을 위해 아래 `usage_sessions` 테이블을 별도로 추가했습니다.
+
+### 6-1. usage_sessions (앱 사용 세션)
+
+REP101 타임테이블을 위해 앱 사용 구간(시작~끝 시각)을 저장하는 테이블입니다. `usage_logs`(하루 집계)와 달리 하루에 앱당 여러 건이 저장됩니다.
+
+| 컬럼명 | 타입 | 설명 |
+|---|---|---|
+| id | uuid | 세션 고유 식별자 |
+| user_id | uuid | 사용자 ID |
+| monitored_app_id | uuid | 사용한 주의 앱 ID |
+| date | date | 사용 날짜 (KST 기준) |
+| start_time | timestamp | 사용 시작 시각 |
+| end_time | timestamp | 사용 종료 시각 |
+| created_at | timestamp | 생성 시각 |
+| updated_at | timestamp | 수정 시각 |
 
 ### 7. usage_reasons (사용 사유)
 
@@ -211,6 +226,7 @@ users
  ├── reminders (1:N)
  ├── usage_logs (1:N)
  ├── usage_reasons (1:N)
+ ├── usage_sessions (1:N)
  ├── alert_settings (1:1)
  └── daily_device_usage (1:N)
 
@@ -218,6 +234,7 @@ monitored_apps
  ├── app_goals (1:1)
  ├── usage_logs (1:N)
  ├── usage_reasons (1:N)
+ ├── usage_sessions (1:N)
  └── reminder_restricted_apps (1:N)
 
 usage_logs
@@ -236,10 +253,12 @@ reminders
 | users - reminders | 1:N |
 | users - usage_logs | 1:N |
 | users - usage_reasons | 1:N |
+| users - usage_sessions | 1:N |
 | users - daily_device_usage | 1:N |
 | monitored_apps - app_goals | 1:1 |
 | monitored_apps - usage_logs | 1:N |
 | monitored_apps - usage_reasons | 1:N |
+| monitored_apps - usage_sessions | 1:N |
 | usage_logs - usage_reasons | 1:N |
 | reminders - monitored_apps | N:M (reminder_restricted_apps 경유) |
 

@@ -1,28 +1,30 @@
 import { UnauthorizedError } from '../../../shared/errors/appError';
 import { sendSuccess } from '../../../shared/responses/apiResponse';
 import asyncHandler from '../../../shared/utils/asyncHandler';
-import * as userService from '../application/userService';
-import type { UpdateUserGenderAgeRequest } from './userDto';
+
+import * as alertSettingService from '../application/alertSettingService';
+import type { UpdateAlertSettingRequest } from './alertSettingDto';
 
 const getAuthenticatedUserId = (user?: Express.Request['user']): string => {
   if (!user?.userId) {
     throw new UnauthorizedError('Authentication required');
   }
+
   return user.userId;
 };
 
-export const getUser = asyncHandler(async (req, res) => {
+export const getAlertSetting = asyncHandler(async (req, res) => {
   const userId = getAuthenticatedUserId(req.user);
-  const user = await userService.getUserByUserId(userId);
+  const result = await alertSettingService.getAlertSetting(userId);
 
-  sendSuccess(res, user);
+  sendSuccess(res, result);
 });
 
-export const updateUserGenderAge = asyncHandler(async (req, res) => {
+export const updateAlertSetting = asyncHandler(async (req, res) => {
   const userId = getAuthenticatedUserId(req.user);
-  const result = await userService.updateUserGenderAge(
-    userId,
-    req.body as UpdateUserGenderAgeRequest
-  );
+  const body = req.body as UpdateAlertSettingRequest;
+
+  const result = await alertSettingService.updateAlertSetting(userId, body.alertTimeMinutes);
+
   sendSuccess(res, result);
 });

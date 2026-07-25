@@ -24,11 +24,26 @@ enum RestrictMode {
   SPECIFIC_APP
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum AgeGroup {
+  TEENS
+  TWENTIES
+  THIRTIES
+  FORTIES
+  FIFTIES_PLUS
+}
+
 model User {
   id                    String     @id @default(uuid()) @db.Uuid
   email                 String     @unique
   name                  String
   profileImage          String?    @map("profile_image")
+  gender                Gender?
+  ageGroup              AgeGroup?  @map("age_group")
   motivation            String?    @db.VarChar(100)
   status                UserStatus @default(ACTIVE)
   withdrawalRequestedAt DateTime?  @map("withdrawal_requested_at")
@@ -43,6 +58,7 @@ model User {
   reminders         Reminder[]
   usageLogs         UsageLog[]
   usageReasons      UsageReason[]
+  usageSessions     UsageSession[]
   dailyDeviceUsages DailyDeviceUsage[]
 
   @@map("users")
@@ -91,6 +107,7 @@ model MonitoredApp {
   appGoal                AppGoal?
   usageLogs              UsageLog[]
   usageReasons           UsageReason[]
+  usageSessions          UsageSession[]
   reminderRestrictedApps ReminderRestrictedApp[]
 
   @@unique([userId, packageName])
@@ -150,6 +167,23 @@ model UsageReason {
 
   @@index([userId, date])
   @@map("usage_reasons")
+}
+
+model UsageSession {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  monitoredAppId String   @map("monitored_app_id") @db.Uuid
+  date           DateTime @db.Date
+  startTime      DateTime @map("start_time")
+  endTime        DateTime @map("end_time")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monitoredApp MonitoredApp @relation(fields: [monitoredAppId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("usage_sessions")
 }
 
 model Reminder {
