@@ -36,13 +36,14 @@ model User {
   createdAt             DateTime   @default(now()) @map("created_at")
   updatedAt             DateTime   @updatedAt @map("updated_at")
 
-  socialAccounts SocialAccount[]
-  totalGoal      TotalGoal?
-  alertSetting   AlertSetting?
-  monitoredApps  MonitoredApp[]
-  reminders      Reminder[]
-  usageLogs      UsageLog[]
-  usageReasons   UsageReason[]
+  socialAccounts    SocialAccount[]
+  totalGoal         TotalGoal?
+  alertSetting      AlertSetting?
+  monitoredApps     MonitoredApp[]
+  reminders         Reminder[]
+  usageLogs         UsageLog[]
+  usageReasons      UsageReason[]
+  dailyDeviceUsages DailyDeviceUsage[]
 
   @@map("users")
 }
@@ -191,4 +192,18 @@ model AlertSetting {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("alert_settings")
+}
+
+model DailyDeviceUsage {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  date             DateTime @db.Date
+  totalUsedMinutes Int      @map("total_used_minutes")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("daily_device_usage")
 }

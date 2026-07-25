@@ -108,6 +108,7 @@
 | UsageLog | GET | `/api/usage-logs?date=` | 일별 주의 앱 사용량 조회 | 구현완료 |
 | UsageLog | GET | `/api/usage-logs/status` | 오늘 주의 앱 사용 현황 조회 | 구현완료 |
 | UsageLog | PUT | `/api/usage-logs` | 일별 주의 앱 사용량 기록/갱신 | 구현완료 |
+| DeviceUsage | PUT | `/api/device-usage` | 기기 전체 사용량 기록/갱신 | 구현완료 |
 | UsageReason | POST | `/api/usage-reasons` | 사용 사유 입력 | 구현완료 |
 | UsageReason | GET | `/api/usage-reasons/calendar?month=` | 날짜별 사유 입력 여부 조회 | 예정 |
 | Dashboard | GET | `/api/dashboard/daily-summary` | 오늘 전체 사용 요약 조회 | 구현완료 |
@@ -1709,7 +1710,49 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 }
 ```
 
-## 17. 구현 순서 권장안
+## 17. DeviceUsage
+
+기기 전체(모든 앱) 사용량을 일별로 기록합니다. 주의 앱만 담는 UsageLog와 달리, 데일리 리포트의 목표 달성 판정과 대시보드의 "폰 전체 사용" 기준값으로 사용합니다.
+
+### PUT `/api/device-usage`
+
+안드로이드 클라이언트가 그 날 기기 전체 사용 시간을 기록하거나 갱신합니다.
+
+- 인증: 필요
+- 상태: 구현완료
+- 같은 사용자, 같은 날짜의 기록은 upsert로 갱신됩니다.
+- `date`가 없으면 KST 기준 오늘 날짜를 사용합니다.
+
+#### Request Body
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| date | string | N | 사용 날짜. `YYYY-MM-DD`. 없으면 KST 오늘 |
+| totalUsedMinutes | number | Y | 기기 전체 사용 시간(분). 0 이상 정수 |
+
+#### Response 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "userId": "uuid",
+    "date": "2026-07-07T00:00:00.000Z",
+    "totalUsedMinutes": 210,
+    "createdAt": "2026-07-07T00:00:00.000Z",
+    "updatedAt": "2026-07-07T00:00:00.000Z"
+  }
+}
+```
+
+#### Errors
+
+| Status | Code | 설명 |
+|---|---|---|
+| 400 | VALIDATION_ERROR | totalUsedMinutes 누락 또는 0 미만/정수 아님 |
+
+## 18. 구현 순서 권장안
 
 1. Auth/User
 2. TotalGoal
@@ -1719,7 +1762,7 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 6. Reminder
 7. Report/AI
 
-## 18. 문서 운영 규칙
+## 19. 문서 운영 규칙
 
 - 도메인 구현 PR은 이 문서의 endpoint, request, response, error code를 기준으로 작성합니다.
 - 구현 중 정책 변경이 필요하면 코드보다 먼저 이 문서를 수정하고 PR 설명에 변경 이유를 남깁니다.
