@@ -5,6 +5,7 @@ import swaggerUi from 'swagger-ui-express';
 import alertSettingRouter from './domains/alertSetting/interfaces/alertSettingRouter';
 import authRouter from './domains/auth/interfaces/authController';
 import dashboardRouter from './domains/dashboard/interfaces/dashboardRouter';
+import deviceUsageRouter from './domains/deviceUsage/interfaces/deviceUsageRouter';
 import groupRouter from './domains/group/interfaces/groupRouter';
 import appGoalRouter from './domains/appGoal/interfaces/appGoalRouter';
 import monitoredAppRouter from './domains/monitoredApp/interfaces/monitoredAppRouter';
@@ -61,6 +62,7 @@ app.use('/api/usage-logs', usageLogRouter);
 app.use('/api/usage-reasons', usageReasonRouter);
 app.use('/api/reminders', reminderRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/device-usage', deviceUsageRouter);
 app.use('/api/alert-settings', alertSettingRouter);
 
 app.use(notFoundHandler);
