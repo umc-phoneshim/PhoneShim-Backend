@@ -1,6 +1,14 @@
 import { BadRequestError, NotFoundError } from '../../../shared/errors/appError';
 import * as userRepository from '../infrastructure/userRepository';
 import type { UpdateUserGenderAgeRequest } from '../interfaces/userDto';
+import { AgeGroup, Gender } from '@prisma/client';
+
+const isValidGender = (value: string): value is Gender => {
+  return Object.values(Gender).includes(value as Gender);
+};
+const isValidAgeGroup = (value: string): value is AgeGroup => {
+  return Object.values(AgeGroup).includes(value as AgeGroup);
+};
 
 export async function getUserByUserId(userId: string) {
   if (!userId) {
@@ -25,6 +33,14 @@ export async function updateUserGenderAge(userId: string, payload: UpdateUserGen
 
   if (!user) {
     throw new NotFoundError('해당 유저를 찾을 수 없습니다.', 'USER_NOT_FOUND');
+  }
+
+  if (!isValidGender(payload.gender)) {
+    throw new BadRequestError('유효하지 않은 gender입니다.', 'VALIDATION_ERROR');
+  }
+
+  if (!isValidAgeGroup(payload.ageGroup)) {
+    throw new BadRequestError('유효하지 않은 ageGroup입니다.', 'VALIDATION_ERROR');
   }
 
   const updatedUser = await userRepository.updateUserGenderAge(userId, payload);

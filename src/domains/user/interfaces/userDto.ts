@@ -6,10 +6,12 @@ export type UpdateUserGenderAgeRequest = {
 export const updateUserGenderAgeRequestSchema = {
   gender: {
     type: 'string',
-    required: true
+    required: true,
+    allowableValues: ['MALE', 'FEMALE']
   },
   ageGroup: {
     type: 'string',
-    required: true
+    required: true,
+    allowableValues: ['TEENS', 'TWENTIES', 'THIRTIES', 'FORTIES', 'FIFTIES_PLUS']
   }
 } as const;
