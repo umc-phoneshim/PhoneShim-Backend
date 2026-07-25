@@ -24,11 +24,26 @@ enum RestrictMode {
   SPECIFIC_APP
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum AgeGroup {
+  TEENS
+  TWENTIES
+  THIRTIES
+  FORTIES
+  FIFTIES_PLUS
+}
+
 model User {
   id                    String     @id @default(uuid()) @db.Uuid
   email                 String     @unique
   name                  String
   profileImage          String?    @map("profile_image")
+  gender                Gender?
+  ageGroup              AgeGroup?  @map("age_group")
   motivation            String?    @db.VarChar(100)
   status                UserStatus @default(ACTIVE)
   withdrawalRequestedAt DateTime?  @map("withdrawal_requested_at")
