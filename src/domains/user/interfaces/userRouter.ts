@@ -11,7 +11,7 @@ router.use(authenticate);
 
 router.get('/me', userController.getUser);
 router.patch(
-  '/me',
+  '/me/onboarding',
   validateRequestBody(updateUserGenderAgeRequestSchema),
   userController.updateUserGenderAge
 );
