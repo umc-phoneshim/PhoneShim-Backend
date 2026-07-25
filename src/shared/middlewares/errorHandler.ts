@@ -9,6 +9,8 @@ const errorHandler: ErrorRequestHandler = (err: Error, req, res, _next) => {
     return;
   }
 
+  console.error(`Unhandled error on ${req.method} ${req.originalUrl}:`, err);
+
   sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Internal server error');
 };
 

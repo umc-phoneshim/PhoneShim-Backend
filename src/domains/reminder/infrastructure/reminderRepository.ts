@@ -1,9 +1,14 @@
 import { Prisma } from '@prisma/client';
 
 import prisma from '../../../shared/database/prismaClient';
+import {
+  isPrismaKnownError,
+  PRISMA_RECORD_NOT_FOUND_ERROR
+} from '../../../shared/errors/prismaError';
 import type { NewReminder, Reminder, ValidatedReminderUpdate } from '../domain/reminderEntity';
 
-export const RECORD_NOT_FOUND_ERROR = 'P2025';
+export const RECORD_NOT_FOUND_ERROR = PRISMA_RECORD_NOT_FOUND_ERROR;
+export { isPrismaKnownError };
 
 type PrismaReminder = Prisma.ReminderGetPayload<{
   include: {
@@ -93,11 +98,7 @@ export async function save(reminder: NewReminder) {
   return toEntity(created);
 }
 
-export async function update(
-  id: string,
-  userId: string,
-  payload: ValidatedReminderUpdate
-) {
+export async function update(id: string, userId: string, payload: ValidatedReminderUpdate) {
   const { restrictedAppIds, ...reminderFields } = payload;
 
   const updated = await prisma.reminder.update({
@@ -123,8 +124,4 @@ export async function deleteByIdAndUserId(id: string, userId: string) {
   await prisma.reminder.delete({
     where: { id, userId }
   });
-}
-
-export function isPrismaKnownError(error: unknown, code: string): boolean {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;
 }
