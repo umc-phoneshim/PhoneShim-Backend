@@ -1,11 +1,15 @@
-import { Prisma } from '@prisma/client';
-
 import prisma from '../../../shared/database/prismaClient';
+import {
+  isPrismaKnownError,
+  PRISMA_RECORD_NOT_FOUND_ERROR,
+  PRISMA_UNIQUE_CONSTRAINT_ERROR
+} from '../../../shared/errors/prismaError';
 
 import type { TotalGoal, NewTotalGoal, ValidatedTotalGoalUpdate } from '../domain/totalGoalEntity';
 
-export const UNIQUE_CONSTRAINT_ERROR = 'P2002';
-export const RECORD_NOT_FOUND_ERROR = 'P2025';
+export const UNIQUE_CONSTRAINT_ERROR = PRISMA_UNIQUE_CONSTRAINT_ERROR;
+export const RECORD_NOT_FOUND_ERROR = PRISMA_RECORD_NOT_FOUND_ERROR;
+export { isPrismaKnownError };
 
 type PrismaTotalGoal = Awaited<ReturnType<typeof prisma.totalGoal.findFirst>>;
 
@@ -36,8 +40,4 @@ export async function updateByUserId(userId: string, payload: ValidatedTotalGoal
   });
 
   return toEntity(updated);
-}
-
-export function isPrismaKnownError(error: unknown, code: string): boolean {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;
 }

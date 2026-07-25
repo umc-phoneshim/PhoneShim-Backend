@@ -1,6 +1,12 @@
 import { Prisma } from '@prisma/client';
 
 import prisma from '../../../shared/database/prismaClient';
+import {
+  isPrismaKnownError,
+  PRISMA_RECORD_NOT_FOUND_ERROR,
+  PRISMA_TRANSACTION_CONFLICT_ERROR,
+  PRISMA_UNIQUE_CONSTRAINT_ERROR
+} from '../../../shared/errors/prismaError';
 
 import type {
   MonitoredApp,
@@ -8,9 +14,10 @@ import type {
   ValidatedMonitoredAppUpdate
 } from '../domain/monitoredAppEntity';
 
-export const UNIQUE_CONSTRAINT_ERROR = 'P2002';
-export const RECORD_NOT_FOUND_ERROR = 'P2025';
-export const TRANSACTION_CONFLICT_ERROR = 'P2034';
+export const UNIQUE_CONSTRAINT_ERROR = PRISMA_UNIQUE_CONSTRAINT_ERROR;
+export const RECORD_NOT_FOUND_ERROR = PRISMA_RECORD_NOT_FOUND_ERROR;
+export const TRANSACTION_CONFLICT_ERROR = PRISMA_TRANSACTION_CONFLICT_ERROR;
+export { isPrismaKnownError };
 
 type PrismaMonitoredApp = Awaited<ReturnType<typeof prisma.monitoredApp.findFirst>>;
 
@@ -96,8 +103,4 @@ export async function deleteByIdAndUserId(id: string, userId: string) {
       userId
     }
   });
-}
-
-export function isPrismaKnownError(error: unknown, code: string): boolean {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;
 }
