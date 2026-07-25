@@ -8,6 +8,7 @@ type FieldRule = {
   type: FieldType;
   required?: boolean;
   minLength?: number;
+  maxLength?: number;
 };
 
 type ValidationSchema = Record<string, FieldRule>;
@@ -65,6 +66,20 @@ export const validateRequestBody = (schema: ValidationSchema): RequestHandler =>
         next(
           new BadRequestError(
             `${fieldName} must be at least ${rule.minLength} characters`,
+            'VALIDATION_ERROR'
+          )
+        );
+        return;
+      }
+      if (
+        rule.type === 'string' &&
+        typeof value === 'string' &&
+        rule.maxLength &&
+        value.trim().length > rule.maxLength
+      ) {
+        next(
+          new BadRequestError(
+            `${fieldName} must be no more than ${rule.maxLength} characters`,
             'VALIDATION_ERROR'
           )
         );

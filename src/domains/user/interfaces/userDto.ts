@@ -15,3 +15,21 @@ export const updateUserGenderAgeRequestSchema = {
     allowableValues: ['TEENS', 'TWENTIES', 'THIRTIES', 'FORTIES', 'FIFTIES_PLUS']
   }
 } as const;
+
+export type UpdateUserNameMotivRequest = {
+  name?: string;
+  motivation?: string;
+};
+
+export const updateUserNameMotivRequestSchema = {
+  name: {
+    type: 'string',
+    required: false,
+    minLength: 1
+  },
+  motivation: {
+    type: 'string',
+    required: false,
+    maxLength: 100
+  }
+} as const;
