@@ -8,7 +8,9 @@ export async function getUserByUserId(userId: string) {
       name: true,
       email: true,
       profileImage: true,
-      motivation: true
+      motivation: true,
+      gender: true,
+      ageGroup: true
     }
   });
 }
