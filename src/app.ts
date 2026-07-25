@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 
 import authRouter from './domains/auth/interfaces/authController';
@@ -14,10 +15,12 @@ import usageLogRouter from './domains/usageLog/interfaces/usageLogRouter';
 import usageReasonRouter from './domains/usageReason/interfaces/usageReasonRouter';
 import errorHandler from './shared/middlewares/errorHandler';
 import notFoundHandler from './shared/middlewares/notFoundHandler';
+import { corsOptions } from './shared/config/cors';
 import { swaggerSpec } from './shared/swagger/swaggerConfig';
 
 const app = express();
 
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
