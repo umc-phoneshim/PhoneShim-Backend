@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 
+import alertSettingRouter from './domains/alertSetting/interfaces/alertSettingRouter';
 import authRouter from './domains/auth/interfaces/authController';
 import dashboardRouter from './domains/dashboard/interfaces/dashboardRouter';
 import groupRouter from './domains/group/interfaces/groupRouter';
@@ -60,6 +61,7 @@ app.use('/api/usage-logs', usageLogRouter);
 app.use('/api/usage-reasons', usageReasonRouter);
 app.use('/api/reminders', reminderRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/alert-settings', alertSettingRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
