@@ -111,15 +111,18 @@ export async function getUsageCalendar(userId: string, month: string): Promise<U
     return { month, achievedDates: [] };
   }
 
-  const monitoredApps = await monitoredAppRepository.findAllByUserId(userId);
+  // monitoredApps와 logs는 서로 의존성이 없어서 동시에 조회
+  const [monitoredApps, logs] = await Promise.all([
+    monitoredAppRepository.findAllByUserId(userId),
+    usageLogRepository.findAllByUserIdInRange(userId, start, end)
+  ]);
+
   const monitoredAppIds = monitoredApps.map((app: MonitoredApp) => app.id);
 
   const appGoals = await appGoalRepository.findAllByMonitoredAppIds(monitoredAppIds);
   const appTargetMinutes = new Map<string, number>(
     appGoals.map((goal: AppGoal) => [goal.monitoredAppId, goal.targetMinutes])
   );
-
-  const logs = await usageLogRepository.findAllByUserIdInRange(userId, start, end);
 
   const achievedDates = buildAchievedDates(logs, totalGoal.targetMinutes, appTargetMinutes);
 
