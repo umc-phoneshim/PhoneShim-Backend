@@ -1,4 +1,7 @@
+import path from 'path';
 import swaggerJSDoc from 'swagger-jsdoc';
+
+const sourceRoot = path.resolve(__dirname, '../..').replace(/\\/g, '/');
 
 export const swaggerSpec = swaggerJSDoc({
   definition: {
@@ -53,5 +56,5 @@ export const swaggerSpec = swaggerJSDoc({
       }
     }
   },
-  apis: ['src/app.ts', 'src/domains/**/*.ts']
+  apis: [`${sourceRoot}/app.{ts,js}`, `${sourceRoot}/domains/**/*.{ts,js}`]
 });
