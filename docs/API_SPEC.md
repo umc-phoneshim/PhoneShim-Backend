@@ -26,12 +26,12 @@
 
 ## 2. 구현 상태 기준
 
-| 상태 | 의미 |
-|---|---|
+| 상태     | 의미                                                              |
+| -------- | ----------------------------------------------------------------- |
 | 구현완료 | 현재 코드에 라우터, 서비스, 저장소 또는 응답 흐름이 구현되어 있음 |
-| 부분구현 | 라우터는 있으나 임시 구현이거나 DB 연동/정책 검증이 부족함 |
-| 예정 | ERD/API 설계 기준으로 필요하지만 아직 코드 구현 전 |
-| 보류 | 외부 연동 또는 정책 확정 후 구현 필요 |
+| 부분구현 | 라우터는 있으나 임시 구현이거나 DB 연동/정책 검증이 부족함        |
+| 예정     | ERD/API 설계 기준으로 필요하지만 아직 코드 구현 전                |
+| 보류     | 외부 연동 또는 정책 확정 후 구현 필요                             |
 
 ## 3. 공통 응답 포맷
 
@@ -58,64 +58,62 @@
 
 ### 인증 에러
 
-| Status | Code | 설명 |
-|---|---|---|
-| 401 | UNAUTHORIZED | 인증 토큰이 없음 |
-| 401 | INVALID_TOKEN | 인증 토큰이 유효하지 않음 |
+| Status | Code          | 설명                      |
+| ------ | ------------- | ------------------------- |
+| 401    | UNAUTHORIZED  | 인증 토큰이 없음          |
+| 401    | INVALID_TOKEN | 인증 토큰이 유효하지 않음 |
 
 ### 공통 에러
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | INVALID_REQUEST_BODY | request body가 JSON object가 아님 |
-| 400 | VALIDATION_ERROR | 필수값 누락, 타입 불일치, 빈 문자열 등 기본 검증 실패 |
-| 404 | NOT_FOUND | 등록되지 않은 라우트 |
-| 500 | INTERNAL_SERVER_ERROR | 처리되지 않은 서버 오류 |
+| Status | Code                  | 설명                                                  |
+| ------ | --------------------- | ----------------------------------------------------- |
+| 400    | INVALID_REQUEST_BODY  | request body가 JSON object가 아님                     |
+| 400    | VALIDATION_ERROR      | 필수값 누락, 타입 불일치, 빈 문자열 등 기본 검증 실패 |
+| 404    | NOT_FOUND             | 등록되지 않은 라우트                                  |
+| 500    | INTERNAL_SERVER_ERROR | 처리되지 않은 서버 오류                               |
 
 ## 4. 전체 API 목록
 
-| Domain | Method | Path | 설명 | 상태 |
-|---|---|---|---|---|
-| System | GET | `/health` | 서버 상태 확인 | 구현완료 |
-| Timer | POST | `/api/timers/start` | 타이머 시작 | 부분구현 |
-| Timer | POST | `/api/timers/stop` | 타이머 종료 | 부분구현 |
-| Group | GET | `/api/groups` | 그룹 목록 조회 | 부분구현 |
-| Group | POST | `/api/groups` | 그룹 생성 | 부분구현 |
-| MonitoredApp | POST | `/api/monitored-apps` | 주의 앱 등록 | 구현완료 |
-| MonitoredApp | GET | `/api/monitored-apps` | 주의 앱 목록 조회 | 구현완료 |
-| MonitoredApp | GET | `/api/monitored-apps/:id` | 주의 앱 단건 조회 | 구현완료 |
-| MonitoredApp | PATCH | `/api/monitored-apps/:id` | 주의 앱 수정 | 구현완료 |
-| MonitoredApp | DELETE | `/api/monitored-apps/:id` | 주의 앱 삭제 | 구현완료 |
-| Auth | POST | `/api/auth/google` | 구글 로그인/회원가입 | 구현완료 |
-| Auth | POST | `/api/auth/kakao` | 카카오 로그인/회원가입 | 구현완료 |
-| Auth | POST | `/api/auth/logout` | 로그아웃 | 예정 |
-| Auth | POST | `/api/auth/link-account` | 동일 이메일 소셜 계정 연동 | 예정 |
-| Auth | DELETE | `/api/auth/withdraw` | 회원 탈퇴 요청 | 구현완료 |
-| User | GET | `/api/users/me` | 내 프로필 조회 | 구현완료 |
-| User | PATCH | `/api/users/me` | 내 이름/목표 문구 수정 | 예정 |
-| TotalGoal | POST | `/api/total-goals` | 전체 목표 생성/설정 | 구현완료 |
-| TotalGoal | GET | `/api/total-goals` | 전체 목표 조회 | 구현완료 |
-| TotalGoal | PATCH | `/api/total-goals` | 전체 목표 수정 | 구현완료 |
-| AppGoal | POST | `/api/app-goals` | 앱별 목표 생성/설정 | 구현완료 |
-| AppGoal | GET | `/api/app-goals?monitoredAppId=` | 앱별 목표 조회 | 구현완료 |
-| AppGoal | PATCH | `/api/app-goals/:id` | 앱별 목표 수정 | 구현완료 |
-| AppGoal | DELETE | `/api/app-goals/:id` | 앱별 목표 삭제 | 구현완료 |
-| Reminder | POST | `/api/reminders` | 할 일 생성 | 구현완료 |
-| Reminder | GET | `/api/reminders?date=` | 날짜별 할 일 목록 조회 | 구현완료 |
-| Reminder | GET | `/api/reminders/:id` | 할 일 단건 조회 | 구현완료 |
-| Reminder | PATCH | `/api/reminders/:id` | 할 일 수정 | 구현완료 |
-| Reminder | DELETE | `/api/reminders/:id` | 할 일 삭제 | 구현완료 |
-| UsageLog | GET | `/api/usage-logs?date=` | 일별 주의 앱 사용량 조회 | 구현완료 |
-| UsageLog | GET | `/api/usage-logs/status` | 오늘 주의 앱 사용 현황 조회 | 구현완료 |
-| UsageLog | PUT | `/api/usage-logs` | 일별 주의 앱 사용량 기록/갱신 | 구현완료 |
-| UsageReason | POST | `/api/usage-reasons` | 사용 사유 입력 | 구현완료 |
-| UsageReason | GET | `/api/usage-reasons/calendar?month=` | 날짜별 사유 입력 여부 조회 | 예정 |
-| Dashboard | GET | `/api/dashboard/daily-summary` | 오늘 전체 사용 요약 조회 | 구현완료 |
-| AlertSetting | GET | `/api/alert-settings` | 하루 알림 설정 조회 | 예정 |
-| AlertSetting | PATCH | `/api/alert-settings` | 하루 알림 시간 수정 | 예정 |
-| Report | GET | `/api/reports/summary?range=` | 주간/월간 요약 조회 | 예정 |
-| AI | POST | `/api/ai/daily-feedback` | 일간 AI 피드백 생성 | 예정 |
-| AI | POST | `/api/ai/suggest-goal` | 목표 시간/횟수 AI 제안 | 예정 |
+| Domain       | Method | Path                                 | 설명                       | 상태     |
+| ------------ | ------ | ------------------------------------ | -------------------------- | -------- |
+| System       | GET    | `/health`                            | 서버 상태 확인             | 구현완료 |
+| Timer        | POST   | `/api/timers/start`                  | 타이머 시작                | 부분구현 |
+| Timer        | POST   | `/api/timers/stop`                   | 타이머 종료                | 부분구현 |
+| Group        | GET    | `/api/groups`                        | 그룹 목록 조회             | 부분구현 |
+| Group        | POST   | `/api/groups`                        | 그룹 생성                  | 부분구현 |
+| MonitoredApp | POST   | `/api/monitored-apps`                | 주의 앱 등록               | 구현완료 |
+| MonitoredApp | GET    | `/api/monitored-apps`                | 주의 앱 목록 조회          | 구현완료 |
+| MonitoredApp | GET    | `/api/monitored-apps/:id`            | 주의 앱 단건 조회          | 구현완료 |
+| MonitoredApp | PATCH  | `/api/monitored-apps/:id`            | 주의 앱 수정               | 구현완료 |
+| MonitoredApp | DELETE | `/api/monitored-apps/:id`            | 주의 앱 삭제               | 구현완료 |
+| Auth         | POST   | `/api/auth/google`                   | 구글 로그인/회원가입       | 예정     |
+| Auth         | POST   | `/api/auth/kakao`                    | 카카오 로그인/회원가입     | 예정     |
+| Auth         | POST   | `/api/auth/logout`                   | 로그아웃                   | 예정     |
+| Auth         | POST   | `/api/auth/link-account`             | 동일 이메일 소셜 계정 연동 | 예정     |
+| Auth         | POST   | `/api/auth/recover-withdrawal`       | 탈퇴 유예 계정 복구        | 예정     |
+| User         | GET    | `/api/users/me`                      | 내 프로필 조회             | 구현완료 |
+| User         | PATCH  | `/api/users/me`                      | 내 이름/목표 문구 수정     | 예정     |
+| User         | DELETE | `/api/users/me`                      | 회원 탈퇴 요청             | 예정     |
+| User         | PATCH  | `/api/users/me/onboarding`           | 성별/연령대 수정           | 예정     |
+| TotalGoal    | POST   | `/api/total-goals`                   | 전체 목표 생성/설정        | 예정     |
+| TotalGoal    | GET    | `/api/total-goals`                   | 전체 목표 조회             | 예정     |
+| TotalGoal    | PATCH  | `/api/total-goals`                   | 전체 목표 수정             | 예정     |
+| AppGoal      | POST   | `/api/app-goals`                     | 앱별 목표 생성/설정        | 예정     |
+| AppGoal      | GET    | `/api/app-goals?monitoredAppId=`     | 앱별 목표 조회             | 예정     |
+| AppGoal      | PATCH  | `/api/app-goals/:id`                 | 앱별 목표 수정             | 예정     |
+| Reminder     | POST   | `/api/reminders`                     | 할 일 생성                 | 구현됨   |
+| Reminder     | GET    | `/api/reminders?date=`               | 날짜별 할 일 목록 조회     | 구현됨   |
+| Reminder     | GET    | `/api/reminders/:id`                 | 할 일 단건 조회            | 구현됨   |
+| Reminder     | PATCH  | `/api/reminders/:id`                 | 할 일 수정                 | 구현됨   |
+| Reminder     | DELETE | `/api/reminders/:id`                 | 할 일 삭제                 | 구현됨   |
+| UsageLog     | GET    | `/api/usage-logs?date=`              | 일별 주의 앱 사용량 조회   | 예정     |
+| UsageReason  | POST   | `/api/usage-reasons`                 | 사용 사유 입력             | 예정     |
+| UsageReason  | GET    | `/api/usage-reasons/calendar?month=` | 날짜별 사유 입력 여부 조회 | 예정     |
+| AlertSetting | GET    | `/api/alert-settings`                | 하루 알림 설정 조회        | 예정     |
+| AlertSetting | PATCH  | `/api/alert-settings`                | 하루 알림 시간 수정        | 예정     |
+| Report       | GET    | `/api/reports/summary?range=`        | 주간/월간 요약 조회        | 예정     |
+| AI           | POST   | `/api/ai/daily-feedback`             | 일간 AI 피드백 생성        | 예정     |
+| AI           | POST   | `/api/ai/suggest-goal`               | 목표 시간/횟수 AI 제안     | 예정     |
 
 ### Figma 명세 반영 현황
 
@@ -171,18 +169,18 @@
 
 #### Request Headers
 
-| 이름 | 필수 | 설명 |
-|---|---|---|
-| Authorization | Y | `Bearer <accessToken>` |
+| 이름          | 필수 | 설명                   |
+| ------------- | ---- | ---------------------- |
+| Authorization | Y    | `Bearer <accessToken>` |
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| packageName | string | Y | Android 앱 패키지명 |
-| appName | string | Y | 앱 이름 |
-| appIcon | string | N | 앱 아이콘 이미지 주소 또는 식별값 |
-| sortOrder | number | N | 앱 표시 순서. 없으면 마지막 순서로 저장 |
+| 필드        | 타입   | 필수 | 설명                                    |
+| ----------- | ------ | ---- | --------------------------------------- |
+| packageName | string | Y    | Android 앱 패키지명                     |
+| appName     | string | Y    | 앱 이름                                 |
+| appIcon     | string | N    | 앱 아이콘 이미지 주소 또는 식별값       |
+| sortOrder   | number | N    | 앱 표시 순서. 없으면 마지막 순서로 저장 |
 
 #### Request Example
 
@@ -215,11 +213,11 @@
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | VALIDATION_ERROR | 필수값 누락, 빈 문자열, 잘못된 `sortOrder` |
-| 400 | MONITORED_APP_LIMIT_EXCEEDED | 사용자당 최대 5개 초과 |
-| 409 | MONITORED_APP_ALREADY_EXISTS | 같은 `packageName` 앱 중복 |
+| Status | Code                         | 설명                                       |
+| ------ | ---------------------------- | ------------------------------------------ |
+| 400    | VALIDATION_ERROR             | 필수값 누락, 빈 문자열, 잘못된 `sortOrder` |
+| 400    | MONITORED_APP_LIMIT_EXCEEDED | 사용자당 최대 5개 초과                     |
+| 409    | MONITORED_APP_ALREADY_EXISTS | 같은 `packageName` 앱 중복                 |
 
 ### GET `/api/monitored-apps`
 
@@ -275,9 +273,9 @@
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 404 | MONITORED_APP_NOT_FOUND | 존재하지 않거나 본인 소유가 아님 |
+| Status | Code                    | 설명                             |
+| ------ | ----------------------- | -------------------------------- |
+| 404    | MONITORED_APP_NOT_FOUND | 존재하지 않거나 본인 소유가 아님 |
 
 ### PATCH `/api/monitored-apps/:id`
 
@@ -288,12 +286,12 @@
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| packageName | string | N | Android 앱 패키지명 |
-| appName | string | N | 앱 이름 |
-| appIcon | string | N | 앱 아이콘 이미지 주소 또는 식별값 |
-| sortOrder | number | N | 0 이상 정수 |
+| 필드        | 타입   | 필수 | 설명                              |
+| ----------- | ------ | ---- | --------------------------------- |
+| packageName | string | N    | Android 앱 패키지명               |
+| appName     | string | N    | 앱 이름                           |
+| appIcon     | string | N    | 앱 아이콘 이미지 주소 또는 식별값 |
+| sortOrder   | number | N    | 0 이상 정수                       |
 
 #### Request Example
 
@@ -324,11 +322,11 @@
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | VALIDATION_ERROR | 빈 문자열 또는 잘못된 `sortOrder` |
-| 404 | MONITORED_APP_NOT_FOUND | 존재하지 않거나 본인 소유가 아님 |
-| 409 | MONITORED_APP_ALREADY_EXISTS | 변경하려는 `packageName`이 이미 등록됨 |
+| Status | Code                         | 설명                                   |
+| ------ | ---------------------------- | -------------------------------------- |
+| 400    | VALIDATION_ERROR             | 빈 문자열 또는 잘못된 `sortOrder`      |
+| 404    | MONITORED_APP_NOT_FOUND      | 존재하지 않거나 본인 소유가 아님       |
+| 409    | MONITORED_APP_ALREADY_EXISTS | 변경하려는 `packageName`이 이미 등록됨 |
 
 ### DELETE `/api/monitored-apps/:id`
 
@@ -344,9 +342,9 @@
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 404 | MONITORED_APP_NOT_FOUND | 존재하지 않거나 본인 소유가 아님 |
+| Status | Code                    | 설명                             |
+| ------ | ----------------------- | -------------------------------- |
+| 404    | MONITORED_APP_NOT_FOUND | 존재하지 않거나 본인 소유가 아님 |
 
 ## 7. Timer
 
@@ -359,9 +357,9 @@
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| userId | string | Y | 사용자 ID |
+| 필드   | 타입   | 필수 | 설명      |
+| ------ | ------ | ---- | --------- |
+| userId | string | Y    | 사용자 ID |
 
 #### Response 201
 
@@ -384,9 +382,9 @@
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| timerId | string | Y | 타이머 ID |
+| 필드    | 타입   | 필수 | 설명      |
+| ------- | ------ | ---- | --------- |
+| timerId | string | Y    | 타이머 ID |
 
 #### Response 200
 
@@ -425,9 +423,9 @@
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| name | string | Y | 그룹 이름 |
+| 필드 | 타입   | 필수 | 설명      |
+| ---- | ------ | ---- | --------- |
+| name | string | Y    | 그룹 이름 |
 
 #### Response 201
 
@@ -566,11 +564,11 @@
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| provider | string | Y | `GOOGLE` 또는 `KAKAO` |
-| providerUserId | string | Y | 소셜 제공자 사용자 고유 ID |
-| email | string | Y | 연결할 소셜 계정 이메일 |
+| 필드           | 타입   | 필수 | 설명                       |
+| -------------- | ------ | ---- | -------------------------- |
+| provider       | string | Y    | `GOOGLE` 또는 `KAKAO`      |
+| providerUserId | string | Y    | 소셜 제공자 사용자 고유 ID |
+| email          | string | Y    | 연결할 소셜 계정 이메일    |
 
 #### Response 200
 
@@ -588,10 +586,10 @@
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | VALIDATION_ERROR | 필수값 누락 또는 잘못된 provider |
-| 409 | SOCIAL_ACCOUNT_ALREADY_LINKED | 이미 연결된 소셜 계정 |
+| Status | Code                          | 설명                             |
+| ------ | ----------------------------- | -------------------------------- |
+| 400    | VALIDATION_ERROR              | 필수값 누락 또는 잘못된 provider |
+| 409    | SOCIAL_ACCOUNT_ALREADY_LINKED | 이미 연결된 소셜 계정            |
 
 ### POST `/api/auth/logout`
 
@@ -642,10 +640,10 @@
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| name | string | N | 사용자 이름 |
-| motivation | string | N | 메인 화면 목표/다짐 문구. 공백 포함 최대 100자 |
+| 필드       | 타입   | 필수 | 설명                                           |
+| ---------- | ------ | ---- | ---------------------------------------------- |
+| name       | string | N    | 사용자 이름                                    |
+| motivation | string | N    | 메인 화면 목표/다짐 문구. 공백 포함 최대 100자 |
 
 #### Response 200
 
@@ -667,9 +665,49 @@
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | VALIDATION_ERROR | 빈 이름 또는 100자 초과 motivation |
+| Status | Code             | 설명                               |
+| ------ | ---------------- | ---------------------------------- |
+| 400    | VALIDATION_ERROR | 빈 이름 또는 100자 초과 motivation |
+
+### PATCH `/api/users/me/onboarding`
+
+온보딩에서 선택한 성별과 연령대 정보를 저장합니다.
+
+- 인증: 필요
+- 상태: 예정
+
+#### Request Body
+
+| 필드     | 타입   | 필수 | 설명                                                                       |
+| -------- | ------ | ---- | -------------------------------------------------------------------------- |
+| gender   | string | Y    | 성별. `MALE`, `FEMALE` 중 하나                                             |
+| ageGroup | string | Y    | 연령대. `TEENS`, `TWENTIES`, `THIRTIES`, `FORTIES`, `FIFTIES_PLUS` 중 하나 |
+
+#### Response 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "홍길동",
+    "profileImage": null,
+    "gender": "MALE",
+    "ageGroup": "TWENTIES",
+    "motivation": null,
+    "status": "ACTIVE",
+    "createdAt": "2026-07-07T00:00:00.000Z",
+    "updatedAt": "2026-07-07T01:00:00.000Z"
+  }
+}
+```
+
+#### Errors
+
+| Status | Code             | 설명                                                          |
+| ------ | ---------------- | ------------------------------------------------------------- |
+| 400    | VALIDATION_ERROR | gender 또는 ageGroup 누락, 타입 불일치, 허용되지 않은 enum 값 |
 
 ## 10. TotalGoal
 
@@ -692,10 +730,10 @@
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| targetMinutes | number | Y | 하루 목표 사용 시간(분) |
-| restrictAfter | boolean | N | 목표 초과 후 제한 여부. 기본값 false |
+| 필드          | 타입    | 필수 | 설명                                 |
+| ------------- | ------- | ---- | ------------------------------------ |
+| targetMinutes | number  | Y    | 하루 목표 사용 시간(분)              |
+| restrictAfter | boolean | N    | 목표 초과 후 제한 여부. 기본값 false |
 
 #### Response 201
 
@@ -715,10 +753,10 @@
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | INVALID_TARGET_MINUTES | 목표 시간이 10~1430분 범위를 벗어남 |
-| 409 | TOTAL_GOAL_ALREADY_EXISTS | 이미 전체 목표가 존재함 |
+| Status | Code                      | 설명                                |
+| ------ | ------------------------- | ----------------------------------- |
+| 400    | INVALID_TARGET_MINUTES    | 목표 시간이 10~1430분 범위를 벗어남 |
+| 409    | TOTAL_GOAL_ALREADY_EXISTS | 이미 전체 목표가 존재함             |
 
 ### GET `/api/total-goals`
 
@@ -745,9 +783,9 @@
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 404 | TOTAL_GOAL_NOT_FOUND | 전체 목표가 없음 |
+| Status | Code                 | 설명             |
+| ------ | -------------------- | ---------------- |
+| 404    | TOTAL_GOAL_NOT_FOUND | 전체 목표가 없음 |
 
 ### PATCH `/api/total-goals`
 
@@ -758,10 +796,10 @@
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| targetMinutes | number | N | 하루 목표 사용 시간(분) |
-| restrictAfter | boolean | N | 목표 초과 후 제한 여부 |
+| 필드          | 타입    | 필수 | 설명                    |
+| ------------- | ------- | ---- | ----------------------- |
+| targetMinutes | number  | N    | 하루 목표 사용 시간(분) |
+| restrictAfter | boolean | N    | 목표 초과 후 제한 여부  |
 
 #### Response 200
 
@@ -781,11 +819,11 @@
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | INVALID_TARGET_MINUTES | 목표 시간이 10~1430분 범위를 벗어남 |
-| 400 | VALIDATION_ERROR | 수정 가능한 필드가 하나도 없음 |
-| 404 | TOTAL_GOAL_NOT_FOUND | 전체 목표가 없음 |
+| Status | Code                   | 설명                                |
+| ------ | ---------------------- | ----------------------------------- |
+| 400    | INVALID_TARGET_MINUTES | 목표 시간이 10~1430분 범위를 벗어남 |
+| 400    | VALIDATION_ERROR       | 수정 가능한 필드가 하나도 없음      |
+| 404    | TOTAL_GOAL_NOT_FOUND   | 전체 목표가 없음                    |
 
 ## 11. AppGoal
 
@@ -810,13 +848,13 @@
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| monitoredAppId | string | Y | 주의 앱 ID |
-| targetMinutes | number | Y | 앱별 목표 사용 시간(분) |
-| targetCount | number | Y | 앱별 목표 진입 횟수 |
-| restrictAfter | boolean | N | 목표 초과 후 제한 여부 |
-| goalReason | string | N | 목표 설정 이유. 최대 100자 |
+| 필드           | 타입    | 필수 | 설명                       |
+| -------------- | ------- | ---- | -------------------------- |
+| monitoredAppId | string  | Y    | 주의 앱 ID                 |
+| targetMinutes  | number  | Y    | 앱별 목표 사용 시간(분)    |
+| targetCount    | number  | Y    | 앱별 목표 진입 횟수        |
+| restrictAfter  | boolean | N    | 목표 초과 후 제한 여부     |
+| goalReason     | string  | N    | 목표 설정 이유. 최대 100자 |
 
 #### Response 201
 
@@ -838,13 +876,13 @@
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | INVALID_TARGET_MINUTES | 목표 시간이 10~1430분 범위를 벗어남 |
-| 400 | INVALID_TARGET_COUNT | 목표 횟수가 1 미만 |
-| 400 | INVALID_GOAL_REASON | 목표 이유가 100자 초과 |
-| 404 | MONITORED_APP_NOT_FOUND | 주의 앱이 없거나 본인 소유가 아님 |
-| 409 | APP_GOAL_ALREADY_EXISTS | 해당 앱 목표가 이미 존재함 |
+| Status | Code                    | 설명                                |
+| ------ | ----------------------- | ----------------------------------- |
+| 400    | INVALID_TARGET_MINUTES  | 목표 시간이 10~1430분 범위를 벗어남 |
+| 400    | INVALID_TARGET_COUNT    | 목표 횟수가 1 미만                  |
+| 400    | INVALID_GOAL_REASON     | 목표 이유가 100자 초과              |
+| 404    | MONITORED_APP_NOT_FOUND | 주의 앱이 없거나 본인 소유가 아님   |
+| 409    | APP_GOAL_ALREADY_EXISTS | 해당 앱 목표가 이미 존재함          |
 
 ### GET `/api/app-goals?monitoredAppId=uuid`
 
@@ -873,11 +911,11 @@
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | VALIDATION_ERROR | `monitoredAppId` 누락 |
-| 404 | MONITORED_APP_NOT_FOUND | 주의 앱이 없거나 본인 소유가 아님 |
-| 404 | APP_GOAL_NOT_FOUND | 해당 앱 목표가 없음 |
+| Status | Code                    | 설명                              |
+| ------ | ----------------------- | --------------------------------- |
+| 400    | VALIDATION_ERROR        | `monitoredAppId` 누락             |
+| 404    | MONITORED_APP_NOT_FOUND | 주의 앱이 없거나 본인 소유가 아님 |
+| 404    | APP_GOAL_NOT_FOUND      | 해당 앱 목표가 없음               |
 
 ### PATCH `/api/app-goals/:id`
 
@@ -888,12 +926,12 @@
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| targetMinutes | number | N | 앱별 목표 사용 시간(분) |
-| targetCount | number | N | 앱별 목표 진입 횟수 |
-| restrictAfter | boolean | N | 목표 초과 후 제한 여부 |
-| goalReason | string | N | 목표 설정 이유. 최대 100자 |
+| 필드          | 타입    | 필수 | 설명                       |
+| ------------- | ------- | ---- | -------------------------- |
+| targetMinutes | number  | N    | 앱별 목표 사용 시간(분)    |
+| targetCount   | number  | N    | 앱별 목표 진입 횟수        |
+| restrictAfter | boolean | N    | 목표 초과 후 제한 여부     |
+| goalReason    | string  | N    | 목표 설정 이유. 최대 100자 |
 
 #### Response 200
 
@@ -915,13 +953,13 @@
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | INVALID_TARGET_MINUTES | 목표 시간이 10~1430분 범위를 벗어남 |
-| 400 | INVALID_TARGET_COUNT | 목표 횟수가 1 미만 |
-| 400 | INVALID_GOAL_REASON | 목표 이유가 100자 초과 |
-| 400 | VALIDATION_ERROR | 수정 가능한 필드가 하나도 없음 |
-| 404 | APP_GOAL_NOT_FOUND | 앱 목표가 없거나 본인 소유가 아님 |
+| Status | Code                   | 설명                                |
+| ------ | ---------------------- | ----------------------------------- |
+| 400    | INVALID_TARGET_MINUTES | 목표 시간이 10~1430분 범위를 벗어남 |
+| 400    | INVALID_TARGET_COUNT   | 목표 횟수가 1 미만                  |
+| 400    | INVALID_GOAL_REASON    | 목표 이유가 100자 초과              |
+| 400    | VALIDATION_ERROR       | 수정 가능한 필드가 하나도 없음      |
+| 404    | APP_GOAL_NOT_FOUND     | 앱 목표가 없거나 본인 소유가 아님   |
 
 ### DELETE `/api/app-goals/:id`
 
@@ -971,9 +1009,9 @@
 
 #### 책임 범위
 
-| 구분 | 책임 |
-|---|---|
-| 백엔드 | 리마인더 CRUD, 시간/중복/제한 앱 소유권 검증, 제한 정책 데이터 제공 |
+| 구분       | 책임                                                                         |
+| ---------- | ---------------------------------------------------------------------------- |
+| 백엔드     | 리마인더 CRUD, 시간/중복/제한 앱 소유권 검증, 제한 정책 데이터 제공          |
 | 클라이언트 | 일정 시작/종료 시각 감지, 스크린타임 엔진 실행, 앱 차단 화면 노출, 제한 해제 |
 
 백엔드는 실제 스마트폰 잠금 또는 앱 차단을 직접 수행하지 않습니다.
@@ -982,23 +1020,23 @@
 
 클라이언트는 Reminder API 응답의 다음 필드를 제한 실행 계약으로 사용합니다.
 
-| 필드 | 설명 |
-|---|---|
-| id | 제한 예약 작업을 식별하기 위한 리마인더 ID |
-| userId | 사용자 식별자 |
-| date | 일정 날짜 |
-| startTime | 제한 시작 시각 |
-| endTime | 제한 종료 시각 |
-| restrictMode | 제한 모드. `NONE`, `FULL_PHONE`, `SPECIFIC_APP` |
-| restrictedAppIds | `SPECIFIC_APP`에서 제한할 주의 앱 ID 목록 |
+| 필드             | 설명                                            |
+| ---------------- | ----------------------------------------------- |
+| id               | 제한 예약 작업을 식별하기 위한 리마인더 ID      |
+| userId           | 사용자 식별자                                   |
+| date             | 일정 날짜                                       |
+| startTime        | 제한 시작 시각                                  |
+| endTime          | 제한 종료 시각                                  |
+| restrictMode     | 제한 모드. `NONE`, `FULL_PHONE`, `SPECIFIC_APP` |
+| restrictedAppIds | `SPECIFIC_APP`에서 제한할 주의 앱 ID 목록       |
 
 모드별 실행 기준은 다음과 같습니다.
 
-| restrictMode | 실행 기준 |
-|---|---|
-| `NONE` | 제한 실행 없음 |
-| `FULL_PHONE` | `startTime`부터 `endTime`까지 필수 앱을 제외한 앱 실행을 전면 제한 |
-| `SPECIFIC_APP` | `restrictedAppIds`에 포함된 주의 앱 진입 시 차단 화면 노출 |
+| restrictMode   | 실행 기준                                                          |
+| -------------- | ------------------------------------------------------------------ |
+| `NONE`         | 제한 실행 없음                                                     |
+| `FULL_PHONE`   | `startTime`부터 `endTime`까지 필수 앱을 제외한 앱 실행을 전면 제한 |
+| `SPECIFIC_APP` | `restrictedAppIds`에 포함된 주의 앱 진입 시 차단 화면 노출         |
 
 `SPECIFIC_APP`에서 실제 앱 차단에 패키지명이 필요한 경우, 클라이언트는 `restrictedAppIds`를 기준으로 주의 앱 API를 조회해 패키지명을 해석합니다.
 
@@ -1024,10 +1062,10 @@
 
 #### 동기화 책임 범위
 
-| 구분 | 책임 |
-|---|---|
-| 백엔드 | 리마인더 생성/수정/삭제 후 동기화 이벤트 또는 재조회 가능한 최신 데이터 제공 |
-| 클라이언트 | 이벤트 수신 또는 API 응답 이후 오늘 할 일 목록 갱신, 재접속 시 목록 재조회 |
+| 구분       | 책임                                                                         |
+| ---------- | ---------------------------------------------------------------------------- |
+| 백엔드     | 리마인더 생성/수정/삭제 후 동기화 이벤트 또는 재조회 가능한 최신 데이터 제공 |
+| 클라이언트 | 이벤트 수신 또는 API 응답 이후 오늘 할 일 목록 갱신, 재접속 시 목록 재조회   |
 
 현재 Socket.IO 서버는 연결 기반을 제공하며, KST 기준 오늘 날짜에 영향을 주는 리마인더 생성/수정/삭제 성공 후 `reminder.created`, `reminder.updated`, `reminder.deleted` 이벤트를 발행합니다. 이벤트 payload의 `requiresRefetch`는 `true`이므로 클라이언트는 이벤트 수신 후 오늘 목록을 재조회합니다.
 
@@ -1044,8 +1082,8 @@
 
 Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 
-| 이벤트명 | 발생 시점 |
-|---|---|
+| 이벤트명           | 발생 시점             |
+| ------------------ | --------------------- |
 | `reminder.created` | 리마인더 생성 성공 후 |
 | `reminder.updated` | 리마인더 수정 성공 후 |
 | `reminder.deleted` | 리마인더 삭제 성공 후 |
@@ -1062,10 +1100,10 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 }
 ```
 
-| 필드 | 설명 |
-|---|---|
-| event | 이벤트명 |
-| reason | 클라이언트가 갱신 목적을 구분하기 위한 문자열. 기본값 `today-reminder-changed` |
+| 필드            | 설명                                                                              |
+| --------------- | --------------------------------------------------------------------------------- |
+| event           | 이벤트명                                                                          |
+| reason          | 클라이언트가 갱신 목적을 구분하기 위한 문자열. 기본값 `today-reminder-changed`    |
 | requiresRefetch | `true`이면 클라이언트는 오늘 할 일 목록을 재조회합니다. 기본 계약은 `true`입니다. |
 
 #### 재접속 및 누락 이벤트 대응
@@ -1109,14 +1147,14 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| date | string | Y | 일정 날짜. `YYYY-MM-DD` 형식의 실제 존재 날짜 |
-| title | string | Y | 일정 이름. 공백 포함 최대 20자 |
-| startTime | string | Y | 시작 시각. timezone을 포함한 ISO datetime string |
-| endTime | string | Y | 종료 시각. timezone을 포함한 ISO datetime string |
-| restrictMode | string | N | `NONE`, `FULL_PHONE`, `SPECIFIC_APP`. 기본값 `NONE` |
-| restrictedAppIds | string[] | N | `SPECIFIC_APP`일 때 제한할 주의 앱 ID 목록 |
+| 필드             | 타입     | 필수 | 설명                                                |
+| ---------------- | -------- | ---- | --------------------------------------------------- |
+| date             | string   | Y    | 일정 날짜. `YYYY-MM-DD` 형식의 실제 존재 날짜       |
+| title            | string   | Y    | 일정 이름. 공백 포함 최대 20자                      |
+| startTime        | string   | Y    | 시작 시각. timezone을 포함한 ISO datetime string    |
+| endTime          | string   | Y    | 종료 시각. timezone을 포함한 ISO datetime string    |
+| restrictMode     | string   | N    | `NONE`, `FULL_PHONE`, `SPECIFIC_APP`. 기본값 `NONE` |
+| restrictedAppIds | string[] | N    | `SPECIFIC_APP`일 때 제한할 주의 앱 ID 목록          |
 
 #### Request Example
 
@@ -1152,13 +1190,13 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | VALIDATION_ERROR | 필수값 누락, 빈 문자열, 제목 20자 초과, 날짜/시간 형식 오류 |
-| 400 | INVALID_TIME_RANGE | 종료 시각이 시작 시각보다 빠르거나, 일정이 1분 미만이거나, KST 기준 날짜가 `date`와 다름 |
-| 400 | INVALID_RESTRICT_MODE | 제한 모드가 `NONE`, `FULL_PHONE`, `SPECIFIC_APP` 중 하나가 아님 |
-| 400 | INVALID_RESTRICTED_APP_IDS | `SPECIFIC_APP`인데 제한 앱 목록이 없거나, 본인 소유 주의 앱이 아님 |
-| 409 | REMINDER_TIME_OVERLAP | 같은 날짜에 겹치는 일정이 있음 |
+| Status | Code                       | 설명                                                                                     |
+| ------ | -------------------------- | ---------------------------------------------------------------------------------------- |
+| 400    | VALIDATION_ERROR           | 필수값 누락, 빈 문자열, 제목 20자 초과, 날짜/시간 형식 오류                              |
+| 400    | INVALID_TIME_RANGE         | 종료 시각이 시작 시각보다 빠르거나, 일정이 1분 미만이거나, KST 기준 날짜가 `date`와 다름 |
+| 400    | INVALID_RESTRICT_MODE      | 제한 모드가 `NONE`, `FULL_PHONE`, `SPECIFIC_APP` 중 하나가 아님                          |
+| 400    | INVALID_RESTRICTED_APP_IDS | `SPECIFIC_APP`인데 제한 앱 목록이 없거나, 본인 소유 주의 앱이 아님                       |
+| 409    | REMINDER_TIME_OVERLAP      | 같은 날짜에 겹치는 일정이 있음                                                           |
 
 ### GET `/api/reminders?date=YYYY-MM-DD`
 
@@ -1171,9 +1209,9 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 
 #### Query Parameters
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| date | string | N | 조회 날짜. `YYYY-MM-DD` 형식의 실제 존재 날짜 |
+| 필드 | 타입   | 필수 | 설명                                          |
+| ---- | ------ | ---- | --------------------------------------------- |
+| date | string | N    | 조회 날짜. `YYYY-MM-DD` 형식의 실제 존재 날짜 |
 
 #### Response 200
 
@@ -1199,9 +1237,9 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | VALIDATION_ERROR | `date` 형식이 `YYYY-MM-DD`가 아니거나 실제 존재하지 않는 날짜 |
+| Status | Code             | 설명                                                          |
+| ------ | ---------------- | ------------------------------------------------------------- |
+| 400    | VALIDATION_ERROR | `date` 형식이 `YYYY-MM-DD`가 아니거나 실제 존재하지 않는 날짜 |
 
 ### GET `/api/reminders/:id`
 
@@ -1233,9 +1271,9 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 404 | REMINDER_NOT_FOUND | 할 일이 없거나 본인 소유가 아님 |
+| Status | Code               | 설명                            |
+| ------ | ------------------ | ------------------------------- |
+| 404    | REMINDER_NOT_FOUND | 할 일이 없거나 본인 소유가 아님 |
 
 ### PATCH `/api/reminders/:id`
 
@@ -1252,14 +1290,14 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| date | string | N | 일정 날짜. `YYYY-MM-DD` 형식의 실제 존재 날짜 |
-| title | string | N | 일정 이름. 공백 포함 최대 20자 |
-| startTime | string | N | 시작 시각. timezone을 포함한 ISO datetime string |
-| endTime | string | N | 종료 시각. timezone을 포함한 ISO datetime string |
-| restrictMode | string | N | `NONE`, `FULL_PHONE`, `SPECIFIC_APP` |
-| restrictedAppIds | string[] | N | `SPECIFIC_APP`일 때 제한할 주의 앱 ID 목록 |
+| 필드             | 타입     | 필수 | 설명                                             |
+| ---------------- | -------- | ---- | ------------------------------------------------ |
+| date             | string   | N    | 일정 날짜. `YYYY-MM-DD` 형식의 실제 존재 날짜    |
+| title            | string   | N    | 일정 이름. 공백 포함 최대 20자                   |
+| startTime        | string   | N    | 시작 시각. timezone을 포함한 ISO datetime string |
+| endTime          | string   | N    | 종료 시각. timezone을 포함한 ISO datetime string |
+| restrictMode     | string   | N    | `NONE`, `FULL_PHONE`, `SPECIFIC_APP`             |
+| restrictedAppIds | string[] | N    | `SPECIFIC_APP`일 때 제한할 주의 앱 ID 목록       |
 
 #### Request Example
 
@@ -1291,14 +1329,14 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | VALIDATION_ERROR | 수정 가능한 필드가 없거나, 빈 문자열, 제목 20자 초과, 날짜/시간 형식 오류 |
-| 400 | INVALID_TIME_RANGE | 종료 시각이 시작 시각보다 빠르거나, 일정이 1분 미만이거나, KST 기준 날짜가 `date`와 다름 |
-| 400 | INVALID_RESTRICT_MODE | 제한 모드가 `NONE`, `FULL_PHONE`, `SPECIFIC_APP` 중 하나가 아님 |
-| 400 | INVALID_RESTRICTED_APP_IDS | `SPECIFIC_APP`인데 제한 앱 목록이 없거나, 본인 소유 주의 앱이 아님 |
-| 404 | REMINDER_NOT_FOUND | 할 일이 없거나 본인 소유가 아님 |
-| 409 | REMINDER_TIME_OVERLAP | 같은 날짜에 겹치는 일정이 있음 |
+| Status | Code                       | 설명                                                                                     |
+| ------ | -------------------------- | ---------------------------------------------------------------------------------------- |
+| 400    | VALIDATION_ERROR           | 수정 가능한 필드가 없거나, 빈 문자열, 제목 20자 초과, 날짜/시간 형식 오류                |
+| 400    | INVALID_TIME_RANGE         | 종료 시각이 시작 시각보다 빠르거나, 일정이 1분 미만이거나, KST 기준 날짜가 `date`와 다름 |
+| 400    | INVALID_RESTRICT_MODE      | 제한 모드가 `NONE`, `FULL_PHONE`, `SPECIFIC_APP` 중 하나가 아님                          |
+| 400    | INVALID_RESTRICTED_APP_IDS | `SPECIFIC_APP`인데 제한 앱 목록이 없거나, 본인 소유 주의 앱이 아님                       |
+| 404    | REMINDER_NOT_FOUND         | 할 일이 없거나 본인 소유가 아님                                                          |
+| 409    | REMINDER_TIME_OVERLAP      | 같은 날짜에 겹치는 일정이 있음                                                           |
 
 ### DELETE `/api/reminders/:id`
 
@@ -1314,9 +1352,9 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 404 | REMINDER_NOT_FOUND | 할 일이 없거나 본인 소유가 아님 |
+| Status | Code               | 설명                            |
+| ------ | ------------------ | ------------------------------- |
+| 404    | REMINDER_NOT_FOUND | 할 일이 없거나 본인 소유가 아님 |
 
 ## 13. UsageLog / UsageReason
 
@@ -1440,14 +1478,14 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| monitoredAppId | string | Y | 주의 앱 ID |
-| usageLogId | string | N | 연결된 일별 사용 기록 ID |
-| date | string | Y | 사용 날짜. `YYYY-MM-DD` |
-| timeRangeStart | string | Y | 사용 시간 구간 시작 ISO string |
-| timeRangeEnd | string | Y | 사용 시간 구간 종료 ISO string |
-| reason | string | Y | 사용 사유. 최대 100자 |
+| 필드           | 타입   | 필수 | 설명                           |
+| -------------- | ------ | ---- | ------------------------------ |
+| monitoredAppId | string | Y    | 주의 앱 ID                     |
+| usageLogId     | string | N    | 연결된 일별 사용 기록 ID       |
+| date           | string | Y    | 사용 날짜. `YYYY-MM-DD`        |
+| timeRangeStart | string | Y    | 사용 시간 구간 시작 ISO string |
+| timeRangeEnd   | string | Y    | 사용 시간 구간 종료 ISO string |
+| reason         | string | Y    | 사용 사유. 최대 100자          |
 
 #### Response 201
 
@@ -1471,11 +1509,11 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | VALIDATION_ERROR | 필수값 누락 또는 사유 100자 초과 |
-| 403 | USAGE_REASON_TIME_FORBIDDEN | 입력 가능 시간대가 아님 |
-| 404 | MONITORED_APP_NOT_FOUND | 주의 앱이 없거나 본인 소유가 아님 |
+| Status | Code                        | 설명                              |
+| ------ | --------------------------- | --------------------------------- |
+| 400    | VALIDATION_ERROR            | 필수값 누락 또는 사유 100자 초과  |
+| 403    | USAGE_REASON_TIME_FORBIDDEN | 입력 가능 시간대가 아님           |
+| 404    | MONITORED_APP_NOT_FOUND     | 주의 앱이 없거나 본인 소유가 아님 |
 
 ### GET `/api/usage-reasons/calendar?month=YYYY-MM`
 
@@ -1573,9 +1611,9 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| alertTimeMinutes | number | Y | 22:00~23:59. 1320~1439 |
+| 필드             | 타입   | 필수 | 설명                   |
+| ---------------- | ------ | ---- | ---------------------- |
+| alertTimeMinutes | number | Y    | 22:00~23:59. 1320~1439 |
 
 #### Response 200
 
@@ -1594,9 +1632,9 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | INVALID_ALERT_TIME | 1320~1439 범위를 벗어남 |
+| Status | Code               | 설명                    |
+| ------ | ------------------ | ----------------------- |
+| 400    | INVALID_ALERT_TIME | 1320~1439 범위를 벗어남 |
 
 ## 16. Report / AI
 
@@ -1618,10 +1656,10 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 
 #### Query Parameters
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| range | string | Y | `week` 또는 `month` |
-| date | string | N | 기준 날짜. 없으면 KST 오늘 |
+| 필드  | 타입   | 필수 | 설명                       |
+| ----- | ------ | ---- | -------------------------- |
+| range | string | Y    | `week` 또는 `month`        |
+| date  | string | N    | 기준 날짜. 없으면 KST 오늘 |
 
 #### Response 200
 
@@ -1645,10 +1683,10 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 400 | INVALID_REPORT_RANGE | range가 올바르지 않음 |
-| 422 | INSUFFICIENT_REPORT_DATA | 최소 집계 기준 미달 |
+| Status | Code                     | 설명                  |
+| ------ | ------------------------ | --------------------- |
+| 400    | INVALID_REPORT_RANGE     | range가 올바르지 않음 |
+| 422    | INSUFFICIENT_REPORT_DATA | 최소 집계 기준 미달   |
 
 ### POST `/api/ai/daily-feedback`
 
@@ -1659,9 +1697,9 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| date | string | N | 기준 날짜. 없으면 KST 오늘 |
+| 필드 | 타입   | 필수 | 설명                       |
+| ---- | ------ | ---- | -------------------------- |
+| date | string | N    | 기준 날짜. 없으면 KST 오늘 |
 
 #### Response 200
 
@@ -1677,9 +1715,9 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 
 #### Errors
 
-| Status | Code | 설명 |
-|---|---|---|
-| 422 | INSUFFICIENT_AI_FEEDBACK_DATA | 사용 로그 또는 사용 사유 데이터 부족 |
+| Status | Code                          | 설명                                 |
+| ------ | ----------------------------- | ------------------------------------ |
+| 422    | INSUFFICIENT_AI_FEEDBACK_DATA | 사용 로그 또는 사용 사유 데이터 부족 |
 
 ### POST `/api/ai/suggest-goal`
 
@@ -1690,10 +1728,10 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 
 #### Request Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| monitoredAppId | string | Y | 주의 앱 ID |
-| goalReason | string | Y | 목표 설정 이유 |
+| 필드           | 타입   | 필수 | 설명           |
+| -------------- | ------ | ---- | -------------- |
+| monitoredAppId | string | Y    | 주의 앱 ID     |
+| goalReason     | string | Y    | 목표 설정 이유 |
 
 #### Response 200
 
