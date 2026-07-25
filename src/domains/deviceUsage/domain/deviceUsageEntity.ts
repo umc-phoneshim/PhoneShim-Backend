@@ -27,6 +27,10 @@ export type NewDeviceUsage = {
 };
 
 export function createDeviceUsageEntity(payload: RecordDeviceUsagePayload): NewDeviceUsage {
+  if (!payload.userId.trim()) {
+    throw new BadRequestError('userId is required', 'VALIDATION_ERROR');
+  }
+
   if (!Number.isInteger(payload.totalUsedMinutes) || payload.totalUsedMinutes < 0) {
     throw new BadRequestError(
       'totalUsedMinutes must be a non-negative integer',
