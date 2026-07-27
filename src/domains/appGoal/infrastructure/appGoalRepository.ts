@@ -1,11 +1,15 @@
-import { Prisma } from '@prisma/client';
-
 import prisma from '../../../shared/database/prismaClient';
+import {
+  isPrismaKnownError,
+  PRISMA_RECORD_NOT_FOUND_ERROR,
+  PRISMA_UNIQUE_CONSTRAINT_ERROR
+} from '../../../shared/errors/prismaError';
 
 import type { AppGoal, NewAppGoal, ValidatedAppGoalUpdate } from '../domain/appGoalEntity';
 
-export const UNIQUE_CONSTRAINT_ERROR = 'P2002';
-export const RECORD_NOT_FOUND_ERROR = 'P2025';
+export const UNIQUE_CONSTRAINT_ERROR = PRISMA_UNIQUE_CONSTRAINT_ERROR;
+export const RECORD_NOT_FOUND_ERROR = PRISMA_RECORD_NOT_FOUND_ERROR;
+export { isPrismaKnownError };
 
 type PrismaAppGoal = Awaited<ReturnType<typeof prisma.appGoal.findFirst>>;
 
@@ -62,8 +66,4 @@ export async function deleteById(id: string) {
   await prisma.appGoal.delete({
     where: { id }
   });
-}
-
-export function isPrismaKnownError(error: unknown, code: string): boolean {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;
 }
