@@ -30,6 +30,7 @@ export const updateUserNameMotivRequestSchema = {
   motivation: {
     type: 'string',
     required: false,
+    minLength: 1,
     maxLength: 100
   }
 } as const;

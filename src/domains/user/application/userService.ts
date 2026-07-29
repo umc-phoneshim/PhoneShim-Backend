@@ -2,6 +2,7 @@ import { BadRequestError, NotFoundError } from '../../../shared/errors/appError'
 import * as userRepository from '../infrastructure/userRepository';
 import type { UpdateUserGenderAgeRequest, UpdateUserNameMotivRequest } from '../interfaces/userDto';
 import { AgeGroup, Gender } from '@prisma/client';
+import { createUserNameMotivUpdate } from '../domain/userEntity';
 
 const isValidGender = (value: string): value is Gender => {
   return Object.values(Gender).includes(value as Gender);
@@ -59,7 +60,8 @@ export async function updateUserNameMotiv(userId: string, payload: UpdateUserNam
     throw new NotFoundError('해당 유저를 찾을 수 없습니다.', 'USER_NOT_FOUND');
   }
 
-  const updatedUser = await userRepository.updateUserNameMotiv(userId, payload);
+  const update = createUserNameMotivUpdate(payload);
+  const updatedUser = await userRepository.updateUserNameMotiv(userId, update);
 
   return updatedUser;
 }
