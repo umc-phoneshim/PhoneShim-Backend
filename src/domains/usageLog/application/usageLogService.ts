@@ -5,6 +5,7 @@ import type { AppGoal } from '../../appGoal/domain/appGoalEntity';
 import * as monitoredAppRepository from '../../monitoredApp/infrastructure/monitoredAppRepository';
 import type { MonitoredApp } from '../../monitoredApp/domain/monitoredAppEntity';
 import * as totalGoalRepository from '../../totalGoal/infrastructure/totalGoalRepository';
+import * as deviceUsageRepository from '../../deviceUsage/infrastructure/deviceUsageRepository';
 import {
   buildAchievedDates,
   createUsageLogEntity,
@@ -111,9 +112,10 @@ export async function getUsageCalendar(userId: string, month: string): Promise<U
     return { month, achievedDates: [] };
   }
 
-  // monitoredApps와 logs는 서로 의존성이 없어서 동시에 조회
-  const [monitoredApps, logs] = await Promise.all([
+  // 주의앱 목록, 폰 전체 사용량(deviceUsages), 주의앱 로그는 서로 의존성이 없어서 동시에 조회
+  const [monitoredApps, deviceUsages, logs] = await Promise.all([
     monitoredAppRepository.findAllByUserId(userId),
+    deviceUsageRepository.findAllByUserIdInRange(userId, start, end),
     usageLogRepository.findAllByUserIdInRange(userId, start, end)
   ]);
 
@@ -124,7 +126,13 @@ export async function getUsageCalendar(userId: string, month: string): Promise<U
     appGoals.map((goal: AppGoal) => [goal.monitoredAppId, goal.targetMinutes])
   );
 
-  const achievedDates = buildAchievedDates(logs, totalGoal.targetMinutes, appTargetMinutes);
+  // 폰 전체 스크린타임(deviceUsages) 기준으로 달성일을 계산
+  const achievedDates = buildAchievedDates(
+    deviceUsages,
+    logs,
+    totalGoal.targetMinutes,
+    appTargetMinutes
+  );
 
   return { month, achievedDates };
 }
