@@ -1623,6 +1623,8 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 
 - 인증: 필요
 - 상태: 구현완료
+- `usedMinutes`는 폰 전체 스크린타임(`daily_device_usage.totalUsedMinutes`) 기준입니다. 주의 앱 사용량 합계가 아니라 기기 전체 사용량입니다.
+- 오늘 기기 전체 사용량(`daily_device_usage`) 기록이 아직 없으면 `usedMinutes`는 `0`입니다.
 - 전체 목표가 없으면 `targetMinutes`, `remainingMinutes`는 `null`이고 `isExceeded`는 `false`입니다.
 
 #### Response 200
