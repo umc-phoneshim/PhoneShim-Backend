@@ -138,11 +138,11 @@ REP101 타임테이블을 위해 앱 사용 구간(시작~끝 시각)을 저장�
 | date | date | 사용 날짜 |
 | time_range_start | timestamp | 사용 시간 구간 시작 |
 | time_range_end | timestamp | 사용 시간 구간 종료 |
-| reason | varchar(100) | 사용 사유 |
+| reason | enum | 사용 사유 코드: LEISURE/COMMUTE/HABIT/INFO/OTHER. 한 시간 블록에 여러 사유를 고르면 고른 코드마다 행이 하나씩 저장됨 |
 | created_at | timestamp | 작성 시각 |
 | updated_at | timestamp | 수정 시각 |
 
-> Figma 정책 `REP-01`은 주의 앱 진입 시 객관식 사용 이유 팝업을 호출하고, 미선택 종료 시 `기타`로 분류하도록 정의합니다. 현재 schema는 `reason` 문자열만 저장합니다. 객관식 선택지 코드, 기타 사유 상세 입력, 1분 내 재진입 예외 이력을 서버에서 검증해야 한다면 `usage_reason_options` 또는 `usage_sessions` 계열 테이블 추가가 필요합니다.
+> Figma 정책 `REP-01`은 주의 앱 진입 시 객관식 사용 이유 팝업을 호출하고, 미선택 종료 시 `기타`로 분류하도록 정의합니다. 이에 맞춰 `reason`을 고정 객관식 코드(`UsageReasonCode` enum)로 저장하며, 체크박스 복수 선택은 고른 코드마다 행을 하나씩 만들어 표현합니다. 미선택 종료 시 클라이언트가 `OTHER`(기타)로 저장합니다. 기타 사유 상세 텍스트, 1분 내 재진입 예외 이력은 현재 서버 저장 범위에 없습니다(필요 시 컬럼/테이블 추가).
 
 ### 8. reminders (리마인더)
 
@@ -210,7 +210,7 @@ REP101 타임테이블을 위해 앱 사용 구간(시작~끝 시각)을 저장�
 | SET/PREF | 사용자 성별, 나이대 | 서버에서 설정 화면 기본값을 제공하려면 `users` 확장 또는 `user_preferences` 테이블 필요 |
 | SET | 온보딩 완료 여부, 스킵 여부, 중단 후 재진입 배너 상태 | 클라이언트 로컬 상태로 충분한지, 서버 동기화가 필요한지 결정 필요 |
 | SET/PREF | 설정 저장 후 스크린타임 엔진 재시작 상태 | 실제 엔진 실행은 클라이언트 책임. 서버는 최신 정책 데이터만 저장 |
-| REP | 사용 이유 객관식 선택지 | 고정 선택지면 enum/code 테이블 검토. 현재는 `usage_reasons.reason` 문자열 |
+| REP | 사용 이유 객관식 선택지 | `UsageReasonCode` enum으로 구현됨(LEISURE/COMMUTE/HABIT/INFO/OTHER). 복수 선택은 코드별 행으로 저장 |
 | REP | 사용 세션 단위 타임테이블 | 현재는 `usage_logs` 일별 집계. 시간대 바를 서버가 제공하려면 `usage_sessions` 필요 |
 | REP | 일별 제안/AI 피드백 저장 이력 | 현재 API는 생성 응답 계약만 있음. 과거 제안 재조회가 필요하면 저장 테이블 필요 |
 | REP | 목표 달성 캘린더 | 현재 목표/사용 로그로 계산 가능. 성능 요구가 생기면 일별 달성 스냅샷 테이블 검토 |
@@ -288,12 +288,12 @@ reminders
 - `monitored_apps`는 사용자당 최소 1개, 최대 5개까지 선택할 수 있습니다.
 - `total_goals.target_minutes`, `app_goals.target_minutes`는 10분~1430분(23시간 50분) 범위만 허용합니다.
 - `app_goals.target_count`는 1 이상이어야 합니다.
-- `app_goals.goal_reason`, `usage_reasons.reason`, `users.motivation`은 공백 포함 최대 100자까지 허용합니다.
+- `app_goals.goal_reason`, `users.motivation`은 공백 포함 최대 100자까지 허용합니다.
 - `reminders`는 같은 사용자/같은 날짜 안에서 시간 범위가 서로 겹칠 수 없습니다.
 - `reminders.start_time`은 `reminders.end_time`보다 이전이어야 합니다.
 - `reminders.restrict_mode`가 `SPECIFIC_APP`이면 `reminder_restricted_apps`가 최소 1개 있어야 합니다.
 - `usage_reasons` 입력은 당일 22:00 ~ 익일 10:00 시간대에만 허용합니다.
-- Figma `REP-01` 기준으로 사용 이유 미선택 종료 시 `기타`로 저장합니다.
+- Figma `REP-01` 기준으로 사용 이유는 고정 객관식 코드에서 복수 선택하며, 미선택 종료 시 `OTHER`(기타)로 저장합니다.
 - `alert_settings.alert_time_minutes`는 1320~1439(22:00~23:59) 범위만 허용합니다.
 
 ## Enum
@@ -314,6 +314,14 @@ reminders
 - `NONE`
 - `FULL_PHONE`
 - `SPECIFIC_APP`
+
+### UsageReasonCode
+
+- `LEISURE` (여가 시간)
+- `COMMUTE` (이동 시간 중)
+- `HABIT` (습관적으로)
+- `INFO` (정보를 얻기 위해)
+- `OTHER` (기타)
 
 ## 삭제 및 탈퇴 정책
 

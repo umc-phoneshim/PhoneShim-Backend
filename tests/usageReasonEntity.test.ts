@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  createUsageReasonEntity,
+  createUsageReasonEntities,
   isWithinReasonWindow
 } from '../src/domains/usageReason/domain/usageReasonEntity';
 
@@ -19,75 +19,71 @@ describe('isWithinReasonWindow', () => {
   });
 });
 
-describe('createUsageReasonEntity', () => {
-  it('creates a usage reason with normalized reason and optional usageLogId', () => {
-    expect(
-      createUsageReasonEntity({
+describe('createUsageReasonEntities', () => {
+  const base = {
+    userId: 'user-1',
+    monitoredAppId: 'app-1',
+    date: '2026-07-16',
+    timeRangeStart: '2026-07-16T12:00:00.000Z',
+    timeRangeEnd: '2026-07-16T12:30:00.000Z'
+  };
+
+  it('creates one entity per selected reason code', () => {
+    expect(createUsageReasonEntities({ ...base, reasonCodes: ['LEISURE', 'HABIT'] })).toEqual([
+      {
         userId: 'user-1',
         monitoredAppId: 'app-1',
-        date: '2026-07-16',
-        timeRangeStart: '2026-07-16T12:00:00.000Z',
-        timeRangeEnd: '2026-07-16T12:30:00.000Z',
-        reason: '  needed it  '
-      })
-    ).toEqual({
-      userId: 'user-1',
-      monitoredAppId: 'app-1',
-      usageLogId: null,
-      date: new Date('2026-07-16T00:00:00.000Z'),
-      timeRangeStart: new Date('2026-07-16T12:00:00.000Z'),
-      timeRangeEnd: new Date('2026-07-16T12:30:00.000Z'),
-      reason: 'needed it'
-    });
+        usageLogId: null,
+        date: new Date('2026-07-16T00:00:00.000Z'),
+        timeRangeStart: new Date('2026-07-16T12:00:00.000Z'),
+        timeRangeEnd: new Date('2026-07-16T12:30:00.000Z'),
+        reason: 'LEISURE'
+      },
+      {
+        userId: 'user-1',
+        monitoredAppId: 'app-1',
+        usageLogId: null,
+        date: new Date('2026-07-16T00:00:00.000Z'),
+        timeRangeStart: new Date('2026-07-16T12:00:00.000Z'),
+        timeRangeEnd: new Date('2026-07-16T12:30:00.000Z'),
+        reason: 'HABIT'
+      }
+    ]);
+  });
+
+  it('removes duplicate reason codes', () => {
+    const result = createUsageReasonEntities({ ...base, reasonCodes: ['OTHER', 'OTHER'] });
+
+    expect(result).toHaveLength(1);
+    expect(result[0].reason).toBe('OTHER');
+  });
+
+  it('rejects an empty reason code list', () => {
+    expect(() => createUsageReasonEntities({ ...base, reasonCodes: [] })).toThrow(
+      'reasonCodes must include at least one reason'
+    );
+  });
+
+  it('rejects an unknown reason code', () => {
+    expect(() => createUsageReasonEntities({ ...base, reasonCodes: ['LEISURE', 'PARTY'] })).toThrow(
+      'reasonCodes must be one of'
+    );
   });
 
   it('rejects invalid time strings', () => {
     expect(() =>
-      createUsageReasonEntity({
-        userId: 'user-1',
-        monitoredAppId: 'app-1',
-        date: '2026-07-16',
-        timeRangeStart: 'bad',
-        timeRangeEnd: '2026-07-16T12:30:00.000Z',
-        reason: 'needed it'
-      })
+      createUsageReasonEntities({ ...base, timeRangeStart: 'bad', reasonCodes: ['LEISURE'] })
     ).toThrow('timeRangeStart must be a valid ISO date string');
   });
 
   it('rejects a time range whose end is not after its start', () => {
     expect(() =>
-      createUsageReasonEntity({
-        userId: 'user-1',
-        monitoredAppId: 'app-1',
-        date: '2026-07-16',
+      createUsageReasonEntities({
+        ...base,
         timeRangeStart: '2026-07-16T12:30:00.000Z',
         timeRangeEnd: '2026-07-16T12:30:00.000Z',
-        reason: 'needed it'
+        reasonCodes: ['LEISURE']
       })
     ).toThrow('timeRangeEnd must be after timeRangeStart');
-  });
-
-  it('rejects blank and too-long reasons', () => {
-    expect(() =>
-      createUsageReasonEntity({
-        userId: 'user-1',
-        monitoredAppId: 'app-1',
-        date: '2026-07-16',
-        timeRangeStart: '2026-07-16T12:00:00.000Z',
-        timeRangeEnd: '2026-07-16T12:30:00.000Z',
-        reason: ' '
-      })
-    ).toThrow('reason is required');
-
-    expect(() =>
-      createUsageReasonEntity({
-        userId: 'user-1',
-        monitoredAppId: 'app-1',
-        date: '2026-07-16',
-        timeRangeStart: '2026-07-16T12:00:00.000Z',
-        timeRangeEnd: '2026-07-16T12:30:00.000Z',
-        reason: '가'.repeat(101)
-      })
-    ).toThrow('reason must be 100 characters or fewer');
   });
 });

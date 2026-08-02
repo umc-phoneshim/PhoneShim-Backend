@@ -3,7 +3,7 @@ import { AppError, NotFoundError } from '../../../shared/errors/appError';
 import * as monitoredAppRepository from '../../monitoredApp/infrastructure/monitoredAppRepository';
 import { formatDateOnly } from '../../usageLog/domain/usageLogEntity';
 import {
-  createUsageReasonEntity,
+  createUsageReasonEntities,
   isWithinReasonWindow,
   type CreateUsageReasonPayload,
   type UsageReasonRecord
@@ -19,7 +19,7 @@ const usageReasonTimeForbidden = () =>
 
 export async function createUsageReason(
   payload: CreateUsageReasonPayload
-): Promise<UsageReasonRecord> {
+): Promise<UsageReasonRecord[]> {
   const monitoredApp = await monitoredAppRepository.findByIdAndUserId(
     payload.monitoredAppId,
     payload.userId
@@ -29,24 +29,25 @@ export async function createUsageReason(
     throw new NotFoundError('Monitored app was not found', 'MONITORED_APP_NOT_FOUND');
   }
 
-  const newUsageReason = createUsageReasonEntity(payload);
+  const newUsageReasons = createUsageReasonEntities(payload);
 
-  if (!isWithinReasonWindow(newUsageReason.date, new Date())) {
+  // 같은 시간 블록의 사유들은 날짜가 모두 같으므로 첫 번째 기준으로 입력 가능 시간대를 검사합니다.
+  if (!isWithinReasonWindow(newUsageReasons[0].date, new Date())) {
     throw usageReasonTimeForbidden();
   }
 
-  const saved = await usageReasonRepository.save(newUsageReason);
+  const saved = await usageReasonRepository.saveMany(newUsageReasons);
 
-  return {
-    id: saved.id,
-    userId: saved.userId,
-    monitoredAppId: saved.monitoredAppId,
-    usageLogId: saved.usageLogId,
-    date: formatDateOnly(saved.date),
-    timeRangeStart: saved.timeRangeStart,
-    timeRangeEnd: saved.timeRangeEnd,
-    reason: saved.reason,
-    createdAt: saved.createdAt,
-    updatedAt: saved.updatedAt
-  };
+  return saved.map((row) => ({
+    id: row.id,
+    userId: row.userId,
+    monitoredAppId: row.monitoredAppId,
+    usageLogId: row.usageLogId,
+    date: formatDateOnly(row.date),
+    timeRangeStart: row.timeRangeStart,
+    timeRangeEnd: row.timeRangeEnd,
+    reason: row.reason,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt
+  }));
 }
