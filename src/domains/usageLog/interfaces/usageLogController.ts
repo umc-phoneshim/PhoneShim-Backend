@@ -1,4 +1,4 @@
-import { UnauthorizedError } from '../../../shared/errors/appError';
+import { BadRequestError, UnauthorizedError } from '../../../shared/errors/appError';
 import { sendSuccess } from '../../../shared/responses/apiResponse';
 import asyncHandler from '../../../shared/utils/asyncHandler';
 
@@ -42,6 +42,20 @@ export const getUsageLogsByDate = asyncHandler(async (req, res) => {
   const dateParam = typeof date === 'string' ? date : undefined;
 
   const result = await usageLogService.getUsageLogsByDate(userId, dateParam);
+
+  sendSuccess(res, result);
+});
+
+// REP106: GET /api/usage-logs/calendar?month=YYYY-MM
+export const getUsageCalendar = asyncHandler(async (req, res) => {
+  const userId = getAuthenticatedUserId(req.user);
+  const month = req.query.month;
+
+  if (typeof month !== 'string') {
+    throw new BadRequestError('month query is required (YYYY-MM)', 'VALIDATION_ERROR');
+  }
+
+  const result = await usageLogService.getUsageCalendar(userId, month);
 
   sendSuccess(res, result);
 });
