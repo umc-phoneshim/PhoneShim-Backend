@@ -6,6 +6,7 @@ import {
   updateUserGenderAge,
   updateUserNameMotiv
 } from '../src/domains/user/application/userService';
+import type { UpdateUserGenderAgeRequest } from '../src/domains/user/interfaces/userDto';
 import * as userRepository from '../src/domains/user/infrastructure/userRepository';
 
 vi.mock('../src/domains/user/infrastructure/userRepository', () => ({
@@ -84,7 +85,9 @@ describe('updateUserGenderAge', () => {
 
   it('rejects a missing payload', async () => {
     getUserByUserIdMock.mockResolvedValueOnce(user);
-    await expect(updateUserGenderAge('user-1', {} as any)).rejects.toMatchObject({
+    await expect(
+      updateUserGenderAge('user-1', {} as UpdateUserGenderAgeRequest)
+    ).rejects.toMatchObject({
       statusCode: 400,
       code: 'VALIDATION_ERROR'
     });
@@ -93,7 +96,10 @@ describe('updateUserGenderAge', () => {
   it('rejects an invalid gender', async () => {
     getUserByUserIdMock.mockResolvedValueOnce(user);
     await expect(
-      updateUserGenderAge('user-1', { gender: 'INVALID', ageGroup: 'TWENTIES' } as any)
+      updateUserGenderAge('user-1', {
+        gender: 'INVALID',
+        ageGroup: 'TWENTIES'
+      } as unknown as UpdateUserGenderAgeRequest)
     ).rejects.toMatchObject({
       statusCode: 400,
       code: 'VALIDATION_ERROR'
@@ -103,7 +109,10 @@ describe('updateUserGenderAge', () => {
   it('rejects an invalid age group', async () => {
     getUserByUserIdMock.mockResolvedValueOnce(user);
     await expect(
-      updateUserGenderAge('user-1', { gender: 'MALE', ageGroup: 'INVALID' } as any)
+      updateUserGenderAge('user-1', {
+        gender: 'MALE',
+        ageGroup: 'INVALID'
+      } as unknown as UpdateUserGenderAgeRequest)
     ).rejects.toMatchObject({
       statusCode: 400,
       code: 'VALIDATION_ERROR'
