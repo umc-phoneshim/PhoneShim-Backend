@@ -6,6 +6,7 @@
   "packageManager": "npm@11.6.2",
   "scripts": {
     "build": "tsc",
+    "prebuild": "prisma generate",
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "lint": "eslint .",
