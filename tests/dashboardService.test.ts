@@ -5,11 +5,11 @@ import * as dashboardRepository from '../src/domains/dashboard/infrastructure/da
 
 vi.mock('../src/domains/dashboard/infrastructure/dashboardRepository', () => ({
   findTotalTargetMinutes: vi.fn(),
-  sumUsedMinutes: vi.fn()
+  findDeviceUsedMinutes: vi.fn()
 }));
 
 const findTotalTargetMinutesMock = vi.mocked(dashboardRepository.findTotalTargetMinutes);
-const sumUsedMinutesMock = vi.mocked(dashboardRepository.sumUsedMinutes);
+const findDeviceUsedMinutesMock = vi.mocked(dashboardRepository.findDeviceUsedMinutes);
 
 describe('dashboardService', () => {
   beforeEach(() => {
@@ -30,7 +30,7 @@ describe('dashboardService', () => {
   });
 
   it('builds the daily usage summary for today in KST', async () => {
-    sumUsedMinutesMock.mockResolvedValueOnce(45);
+    findDeviceUsedMinutesMock.mockResolvedValueOnce(45);
     findTotalTargetMinutesMock.mockResolvedValueOnce(60);
 
     await expect(getDailyUsageSummary('user-1')).resolves.toEqual({
@@ -41,7 +41,10 @@ describe('dashboardService', () => {
       isExceeded: false
     });
 
-    expect(sumUsedMinutesMock).toHaveBeenCalledWith('user-1', new Date('2026-07-16T00:00:00.000Z'));
+    expect(findDeviceUsedMinutesMock).toHaveBeenCalledWith(
+      'user-1',
+      new Date('2026-07-16T00:00:00.000Z')
+    );
     expect(findTotalTargetMinutesMock).toHaveBeenCalledWith('user-1');
   });
 });
