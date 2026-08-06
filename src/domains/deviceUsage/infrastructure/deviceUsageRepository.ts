@@ -17,3 +17,13 @@ export async function upsertDaily(deviceUsage: NewDeviceUsage) {
     create: deviceUsage
   });
 }
+
+// REP106 캘린더: 한 달 범위(startDate ~ endDate)의 기기 전체 사용량 기록을 전부 가져옵니다.
+export async function findAllByUserIdInRange(userId: string, startDate: Date, endDate: Date) {
+  return prisma.dailyDeviceUsage.findMany({
+    where: {
+      userId,
+      date: { gte: startDate, lte: endDate }
+    }
+  });
+}
