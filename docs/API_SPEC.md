@@ -110,8 +110,8 @@
 | DeviceUsage  | PUT    | `/api/device-usage`                  | 기기 전체 사용량 기록/갱신  | 구현완료 |
 | UsageReason  | POST   | `/api/usage-reasons`                 | 사용 사유 입력              | 예정     |
 | UsageReason  | GET    | `/api/usage-reasons/calendar?month=` | 날짜별 사유 입력 여부 조회  | 예정     |
-| UsageSession | POST   | `/api/usage-sessions`                | 앱 사용 세션(시작~끝) 저장  | 예정     |
-| UsageSession | GET    | `/api/usage-sessions?date=`          | 날짜별 타임테이블 세션 조회 | 예정     |
+| UsageSession | POST   | `/api/usage-sessions`                | 앱 사용 세션(시작~끝) 저장  | 구현완료 |
+| UsageSession | GET    | `/api/usage-sessions?date=`          | 날짜별 타임테이블 세션 조회 | 구현완료 |
 | AlertSetting | GET    | `/api/alert-settings`                | 하루 알림 설정 조회         | 예정     |
 | AlertSetting | PATCH  | `/api/alert-settings`                | 하루 알림 시간 수정         | 예정     |
 | Report       | GET    | `/api/reports/summary?range=`        | 주간/월간 요약 조회         | 예정     |
@@ -1550,7 +1550,7 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 앱 사용 세션(시작~끝 시각) 하나를 저장합니다. REP101 타임테이블의 원본 데이터입니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Request Body
 
@@ -1591,7 +1591,7 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 특정 날짜의 앱 사용 세션을 `startTime` 오름차순으로 조회합니다. `date`를 생략하면 KST 기준 오늘입니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Response 200
 
