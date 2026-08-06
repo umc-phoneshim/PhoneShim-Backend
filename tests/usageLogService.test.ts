@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as appGoalRepository from '../src/domains/appGoal/infrastructure/appGoalRepository';
+import * as deviceUsageRepository from '../src/domains/deviceUsage/infrastructure/deviceUsageRepository';
 import * as monitoredAppRepository from '../src/domains/monitoredApp/infrastructure/monitoredAppRepository';
+import * as totalGoalRepository from '../src/domains/totalGoal/infrastructure/totalGoalRepository';
 import {
   getTodayUsageStatus,
+  getUsageCalendar,
   getUsageLogsByDate,
   recordUsageLog
 } from '../src/domains/usageLog/application/usageLogService';
@@ -13,22 +16,34 @@ vi.mock('../src/domains/appGoal/infrastructure/appGoalRepository', () => ({
   findAllByMonitoredAppIds: vi.fn()
 }));
 
+vi.mock('../src/domains/deviceUsage/infrastructure/deviceUsageRepository', () => ({
+  findAllByUserIdInRange: vi.fn()
+}));
+
 vi.mock('../src/domains/monitoredApp/infrastructure/monitoredAppRepository', () => ({
   findAllByUserId: vi.fn(),
   findByIdAndUserId: vi.fn()
 }));
 
+vi.mock('../src/domains/totalGoal/infrastructure/totalGoalRepository', () => ({
+  findByUserId: vi.fn()
+}));
+
 vi.mock('../src/domains/usageLog/infrastructure/usageLogRepository', () => ({
   findAllByUserIdAndDate: vi.fn(),
   findAllByUserIdForDate: vi.fn(),
+  findAllByUserIdInRange: vi.fn(),
   upsertDaily: vi.fn()
 }));
 
 const findAllGoalsByMonitoredAppIdsMock = vi.mocked(appGoalRepository.findAllByMonitoredAppIds);
+const findDeviceUsageInRangeMock = vi.mocked(deviceUsageRepository.findAllByUserIdInRange);
 const findAllAppsByUserIdMock = vi.mocked(monitoredAppRepository.findAllByUserId);
 const findAppByIdAndUserIdMock = vi.mocked(monitoredAppRepository.findByIdAndUserId);
+const findTotalGoalByUserIdMock = vi.mocked(totalGoalRepository.findByUserId);
 const findAllByUserIdAndDateMock = vi.mocked(usageLogRepository.findAllByUserIdAndDate);
 const findAllByUserIdForDateMock = vi.mocked(usageLogRepository.findAllByUserIdForDate);
+const findUsageLogsInRangeMock = vi.mocked(usageLogRepository.findAllByUserIdInRange);
 const upsertDailyMock = vi.mocked(usageLogRepository.upsertDaily);
 
 const monitoredApp = {
@@ -187,5 +202,83 @@ describe('usageLogService', () => {
     await expect(getTodayUsageStatus('user-1')).resolves.toEqual([]);
     expect(findAllGoalsByMonitoredAppIdsMock).not.toHaveBeenCalled();
     expect(findAllByUserIdAndDateMock).not.toHaveBeenCalled();
+  });
+
+  it('returns an empty calendar without querying usage when the user has no total goal', async () => {
+    findTotalGoalByUserIdMock.mockResolvedValueOnce(null);
+
+    await expect(getUsageCalendar('user-1', '2026-07')).resolves.toEqual({
+      month: '2026-07',
+      achievedDates: []
+    });
+    expect(findDeviceUsageInRangeMock).not.toHaveBeenCalled();
+    expect(findUsageLogsInRangeMock).not.toHaveBeenCalled();
+  });
+
+  it('builds the calendar from total phone screen time, not the monitored app sum', async () => {
+    const at = (date: string) => new Date(`${date}T00:00:00.000Z`);
+
+    findTotalGoalByUserIdMock.mockResolvedValueOnce({
+      id: 'goal-1',
+      userId: 'user-1',
+      targetMinutes: 120,
+      restrictAfter: false,
+      createdAt: at('2026-07-01'),
+      updatedAt: at('2026-07-01')
+    });
+    findAllAppsByUserIdMock.mockResolvedValueOnce([monitoredApp]);
+    findDeviceUsageInRangeMock.mockResolvedValueOnce([
+      {
+        id: 'du-1',
+        userId: 'user-1',
+        date: at('2026-07-01'),
+        totalUsedMinutes: 100,
+        createdAt: at('2026-07-01'),
+        updatedAt: at('2026-07-01')
+      },
+      {
+        id: 'du-2',
+        userId: 'user-1',
+        date: at('2026-07-02'),
+        totalUsedMinutes: 200,
+        createdAt: at('2026-07-02'),
+        updatedAt: at('2026-07-02')
+      }
+    ]);
+    findUsageLogsInRangeMock.mockResolvedValueOnce([
+      {
+        id: 'log-1',
+        userId: 'user-1',
+        monitoredAppId: 'app-1',
+        date: at('2026-07-01'),
+        usedMinutes: 30,
+        entryCount: 2,
+        createdAt: at('2026-07-01'),
+        updatedAt: at('2026-07-01')
+      }
+    ]);
+    findAllGoalsByMonitoredAppIdsMock.mockResolvedValueOnce([
+      {
+        id: 'goal-app-1',
+        monitoredAppId: 'app-1',
+        targetMinutes: 60,
+        targetCount: 3,
+        restrictAfter: false,
+        goalReason: null,
+        createdAt: at('2026-07-01'),
+        updatedAt: at('2026-07-01')
+      }
+    ]);
+
+    // 07-01은 폰 전체 100분(<=120) → 달성. 07-02는 폰 전체 200분(>120) → 달성 아님.
+    await expect(getUsageCalendar('user-1', '2026-07')).resolves.toEqual({
+      month: '2026-07',
+      achievedDates: ['2026-07-01']
+    });
+    expect(findDeviceUsageInRangeMock).toHaveBeenCalledWith(
+      'user-1',
+      at('2026-07-01'),
+      at('2026-07-31')
+    );
   });
 });

@@ -54,3 +54,13 @@ export async function findAllByUserIdForDate(userId: string, date: Date) {
     orderBy: { createdAt: 'asc' }
   });
 }
+
+// REP106 캘린더: 한 달 범위(startDate ~ endDate)의 usage_logs를 전부 가져옵니다.
+export async function findAllByUserIdInRange(userId: string, startDate: Date, endDate: Date) {
+  return prisma.usageLog.findMany({
+    where: {
+      userId,
+      date: { gte: startDate, lte: endDate }
+    }
+  });
+}

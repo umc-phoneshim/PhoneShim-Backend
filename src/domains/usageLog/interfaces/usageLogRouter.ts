@@ -41,6 +41,21 @@ router.get('/status', usageLogController.getTodayUsageStatus);
 
 /**
  * @openapi
+ * /api/usage-logs/calendar:
+ *   get:
+ *     summary: Get days that met the usage goal in a month (REP106)
+ *     tags:
+ *       - UsageLogs
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dates marked 'O' for the given month.
+ */
+router.get('/calendar', usageLogController.getUsageCalendar);
+
+/**
+ * @openapi
  * /api/usage-logs:
  *   put:
  *     summary: Sync today's cumulative usage minutes/entry count for a monitored app

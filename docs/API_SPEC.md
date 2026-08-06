@@ -86,34 +86,39 @@
 | MonitoredApp | GET    | `/api/monitored-apps/:id`            | 주의 앱 단건 조회           | 구현완료 |
 | MonitoredApp | PATCH  | `/api/monitored-apps/:id`            | 주의 앱 수정                | 구현완료 |
 | MonitoredApp | DELETE | `/api/monitored-apps/:id`            | 주의 앱 삭제                | 구현완료 |
-| Auth         | POST   | `/api/auth/google`                   | 구글 로그인/회원가입        | 예정     |
-| Auth         | POST   | `/api/auth/kakao`                    | 카카오 로그인/회원가입      | 예정     |
+| Auth         | POST   | `/api/auth/google`                   | 구글 로그인/회원가입        | 구현완료 |
+| Auth         | POST   | `/api/auth/kakao`                    | 카카오 로그인/회원가입      | 구현완료 |
+| Auth         | DELETE | `/api/auth/withdraw`                 | 회원 탈퇴 요청              | 구현완료 |
 | Auth         | POST   | `/api/auth/logout`                   | 로그아웃                    | 예정     |
 | Auth         | POST   | `/api/auth/link-account`             | 동일 이메일 소셜 계정 연동  | 예정     |
 | Auth         | POST   | `/api/auth/recover-withdrawal`       | 탈퇴 유예 계정 복구         | 예정     |
 | User         | GET    | `/api/users/me`                      | 내 프로필 조회              | 구현완료 |
 | User         | PATCH  | `/api/users/me`                      | 내 이름/목표 문구 수정      | 예정     |
-| User         | DELETE | `/api/users/me`                      | 회원 탈퇴 요청              | 예정     |
-| User         | PATCH  | `/api/users/me/onboarding`           | 성별/연령대 수정            | 예정     |
-| TotalGoal    | POST   | `/api/total-goals`                   | 전체 목표 생성/설정         | 예정     |
-| TotalGoal    | GET    | `/api/total-goals`                   | 전체 목표 조회              | 예정     |
-| TotalGoal    | PATCH  | `/api/total-goals`                   | 전체 목표 수정              | 예정     |
-| AppGoal      | POST   | `/api/app-goals`                     | 앱별 목표 생성/설정         | 예정     |
-| AppGoal      | GET    | `/api/app-goals?monitoredAppId=`     | 앱별 목표 조회              | 예정     |
-| AppGoal      | PATCH  | `/api/app-goals/:id`                 | 앱별 목표 수정              | 예정     |
-| Reminder     | POST   | `/api/reminders`                     | 할 일 생성                  | 구현됨   |
-| Reminder     | GET    | `/api/reminders?date=`               | 날짜별 할 일 목록 조회      | 구현됨   |
-| Reminder     | GET    | `/api/reminders/:id`                 | 할 일 단건 조회             | 구현됨   |
-| Reminder     | PATCH  | `/api/reminders/:id`                 | 할 일 수정                  | 구현됨   |
-| Reminder     | DELETE | `/api/reminders/:id`                 | 할 일 삭제                  | 구현됨   |
-| UsageLog     | GET    | `/api/usage-logs?date=`              | 일별 주의 앱 사용량 조회    | 예정     |
+| User         | PATCH  | `/api/users/me/onboarding`           | 성별/연령대 수정            | 구현완료 |
+| TotalGoal    | POST   | `/api/total-goals`                   | 전체 목표 생성/설정         | 구현완료 |
+| TotalGoal    | GET    | `/api/total-goals`                   | 전체 목표 조회              | 구현완료 |
+| TotalGoal    | PATCH  | `/api/total-goals`                   | 전체 목표 수정              | 구현완료 |
+| AppGoal      | POST   | `/api/app-goals`                     | 앱별 목표 생성/설정         | 구현완료 |
+| AppGoal      | GET    | `/api/app-goals?monitoredAppId=`     | 앱별 목표 조회              | 구현완료 |
+| AppGoal      | PATCH  | `/api/app-goals/:id`                 | 앱별 목표 수정              | 구현완료 |
+| AppGoal      | DELETE | `/api/app-goals/:id`                 | 앱별 목표 삭제              | 구현완료 |
+| Reminder     | POST   | `/api/reminders`                     | 할 일 생성                  | 구현완료 |
+| Reminder     | GET    | `/api/reminders?date=`               | 날짜별 할 일 목록 조회      | 구현완료 |
+| Reminder     | GET    | `/api/reminders/:id`                 | 할 일 단건 조회             | 구현완료 |
+| Reminder     | PATCH  | `/api/reminders/:id`                 | 할 일 수정                  | 구현완료 |
+| Reminder     | DELETE | `/api/reminders/:id`                 | 할 일 삭제                  | 구현완료 |
+| UsageLog     | GET    | `/api/usage-logs?date=`              | 일별 주의 앱 사용량 조회    | 구현완료 |
+| UsageLog     | GET    | `/api/usage-logs/status`             | 오늘 주의 앱 사용 현황 조회 | 구현완료 |
+| UsageLog     | GET    | `/api/usage-logs/calendar?month=`    | 월별 목표 달성(O) 날짜 조회 | 구현완료 |
+| UsageLog     | PUT    | `/api/usage-logs`                    | 앱별 일일 사용량 기록/갱신  | 구현완료 |
 | DeviceUsage  | PUT    | `/api/device-usage`                  | 기기 전체 사용량 기록/갱신  | 구현완료 |
-| UsageReason  | POST   | `/api/usage-reasons`                 | 사용 사유 입력              | 예정     |
+| UsageReason  | POST   | `/api/usage-reasons`                 | 사용 사유 입력              | 구현완료 |
 | UsageReason  | GET    | `/api/usage-reasons/calendar?month=` | 날짜별 사유 입력 여부 조회  | 예정     |
 | UsageSession | POST   | `/api/usage-sessions`                | 앱 사용 세션(시작~끝) 저장  | 구현완료 |
 | UsageSession | GET    | `/api/usage-sessions?date=`          | 날짜별 타임테이블 세션 조회 | 구현완료 |
-| AlertSetting | GET    | `/api/alert-settings`                | 하루 알림 설정 조회         | 예정     |
-| AlertSetting | PATCH  | `/api/alert-settings`                | 하루 알림 시간 수정         | 예정     |
+| Dashboard    | GET    | `/api/dashboard/daily-summary`       | 오늘 전체 사용 요약 조회    | 구현완료 |
+| AlertSetting | GET    | `/api/alert-settings`                | 하루 알림 설정 조회         | 구현완료 |
+| AlertSetting | PATCH  | `/api/alert-settings`                | 하루 알림 시간 수정         | 구현완료 |
 | Report       | GET    | `/api/reports/summary?range=`        | 주간/월간 요약 조회         | 예정     |
 | AI           | POST   | `/api/ai/daily-feedback`             | 일간 AI 피드백 생성         | 예정     |
 | AI           | POST   | `/api/ai/suggest-goal`               | 목표 시간/횟수 AI 제안      | 예정     |
@@ -677,7 +682,7 @@
 온보딩에서 선택한 성별과 연령대 정보를 저장합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Request Body
 
@@ -1361,7 +1366,7 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 
 ## 13. UsageLog / UsageReason / UsageSession
 
-기능명세서 `REP101`, `REP102`, `REP106`, 정책 `REP-01`에 해당합니다.
+기능명세서 `REP101`, `REP102`, `REP106`, 정책 `REP-01`, `REP-07`에 해당합니다.
 
 > `UsageLog`는 하루 앱별 합계(대시보드용)이고, `UsageSession`은 시작~끝 시각을 가진 사용 구간으로 `REP101` 타임테이블의 원본 데이터입니다. 하루에 앱당 여러 건이 쌓일 수 있습니다.
 
@@ -1520,30 +1525,38 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 | 403    | USAGE_REASON_TIME_FORBIDDEN | 입력 가능 시간대가 아님           |
 | 404    | MONITORED_APP_NOT_FOUND     | 주의 앱이 없거나 본인 소유가 아님 |
 
-### GET `/api/usage-reasons/calendar?month=YYYY-MM`
+### GET `/api/usage-logs/calendar?month=YYYY-MM`
 
-월 단위로 사용 사유 입력 여부를 조회합니다.
+월 단위로 목표를 달성('O')한 날짜 목록을 조회합니다. 기능명세서 `REP106`, 정책 `REP-07`에 해당합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
+- 판정 기준(REP-07): 해당 날짜의 폰 전체 스크린타임(`daily_device_usage.totalUsedMinutes`)이 전체 목표 이하이고, 목표가 설정된 주의 앱이 모두 각자 목표 이하이면 그 날짜를 달성으로 봅니다. 폰 전체 사용량은 주의 앱 사용량 합계가 아니라 기기 전체 사용량입니다.
+- 전체 목표(TotalGoal)가 없거나, 그 날짜의 기기 전체 사용량(`daily_device_usage`) 기록이 없으면 폰 전체 사용을 판정할 수 없으므로 달성 목록에 포함되지 않습니다.
+
+#### Query Parameters
+
+| 파라미터 | 타입   | 필수 | 설명                 |
+| -------- | ------ | ---- | -------------------- |
+| month    | string | Y    | 조회할 월. `YYYY-MM` |
 
 #### Response 200
 
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "date": "2026-07-01",
-      "hasReason": true
-    },
-    {
-      "date": "2026-07-02",
-      "hasReason": false
-    }
-  ]
+  "data": {
+    "month": "2026-07",
+    "achievedDates": ["2026-07-01", "2026-07-03"]
+  }
 }
 ```
+
+#### Errors
+
+| Status | Code             | 설명                                  |
+| ------ | ---------------- | ------------------------------------- |
+| 400    | VALIDATION_ERROR | month 누락 또는 `YYYY-MM` 형식이 아님 |
 
 ### POST `/api/usage-sessions`
 
@@ -1657,7 +1670,8 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 하루 알림 설정을 조회합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
+- 설정이 없으면 기본값(`enabled=true`, `alertTimeMinutes=1320`)으로 생성해 반환합니다.
 
 #### Response 200
 
@@ -1680,7 +1694,8 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 하루 알림 시간을 수정합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
+- 설정이 없으면 요청한 시간과 기본 수신 상태(`enabled=true`)로 생성합니다.
 
 #### Request Body
 
@@ -1696,6 +1711,7 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
   "data": {
     "id": "uuid",
     "userId": "uuid",
+    "enabled": true,
     "alertTimeMinutes": 1380,
     "createdAt": "2026-07-07T00:00:00.000Z",
     "updatedAt": "2026-07-07T01:00:00.000Z"
