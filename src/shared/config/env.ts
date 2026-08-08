@@ -35,6 +35,9 @@ export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT || 3000),
   databaseUrl: getRequiredEnv('DATABASE_URL'),
+  google: {
+    webClientId: getRequiredEnv('GOOGLE_WEB_CLIENT_ID')
+  },
   jwt: {
     accessSecret: resolveJwtAccessSecret(),
     accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '1h'

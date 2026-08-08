@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { fetchGoogleUserInfo } from '../src/domains/auth/infrastructure/googleAuthClient';
 import { fetchKakaoUserInfo } from '../src/domains/auth/infrastructure/kakaoAuthClient';
@@ -81,10 +81,6 @@ describe('socialLogin', () => {
     signAccessTokenMock.mockReturnValue('signed-token');
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('creates a new Kakao user and signs an access token', async () => {
     fetchKakaoUserInfoMock.mockResolvedValueOnce({
       providerUserId: 'kakao-1',
@@ -150,9 +146,7 @@ describe('socialLogin', () => {
     expect(userFindUniqueOrThrowMock).toHaveBeenCalledWith({ where: { id: 'user-1' } });
   });
 
-  it('reactivates a withdrawal pending account inside the grace period', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-07-16T00:00:00.000Z'));
+  it('rejects a withdrawal pending account without reactivation', async () => {
     fetchGoogleUserInfoMock.mockResolvedValueOnce({
       providerUserId: 'google-1',
       email: 'user@example.com',
@@ -165,24 +159,15 @@ describe('socialLogin', () => {
         withdrawalRequestedAt: new Date('2026-07-10T00:00:00.000Z')
       }
     } as never);
-    userUpdateMock.mockResolvedValueOnce(activeUser as never);
 
-    await expect(socialLogin('GOOGLE', 'provider-token')).resolves.toEqual({
-      accessToken: 'signed-token',
-      isNewUser: false
+    await expect(socialLogin('GOOGLE', 'provider-token')).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'ACCOUNT_WITHDRAWAL_PENDING'
     });
-    expect(userUpdateMock).toHaveBeenCalledWith({
-      where: { id: 'user-1' },
-      data: {
-        status: 'ACTIVE',
-        withdrawalRequestedAt: null
-      }
-    });
+    expect(userUpdateMock).not.toHaveBeenCalled();
   });
 
-  it('rejects deleted and expired withdrawal accounts', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-07-16T00:00:00.000Z'));
+  it('rejects deleted accounts', async () => {
     fetchGoogleUserInfoMock.mockResolvedValue({
       providerUserId: 'google-1',
       email: 'user@example.com',
@@ -195,18 +180,6 @@ describe('socialLogin', () => {
     await expect(socialLogin('GOOGLE', 'provider-token')).rejects.toMatchObject({
       statusCode: 403,
       code: 'ACCOUNT_DELETED'
-    });
-
-    socialAccountFindUniqueMock.mockResolvedValueOnce({
-      user: {
-        ...activeUser,
-        status: 'WITHDRAWAL_PENDING',
-        withdrawalRequestedAt: new Date('2026-07-01T00:00:00.000Z')
-      }
-    } as never);
-    await expect(socialLogin('GOOGLE', 'provider-token')).rejects.toMatchObject({
-      statusCode: 403,
-      code: 'WITHDRAWAL_PERIOD_EXPIRED'
     });
   });
 

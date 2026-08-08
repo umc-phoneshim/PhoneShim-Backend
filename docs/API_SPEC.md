@@ -458,6 +458,7 @@
 - 동일 이메일 중복 가입은 허용하지 않습니다.
 - 같은 이메일로 다른 소셜 제공자가 들어오면 계정 연동 플로우를 사용합니다.
 - 탈퇴 요청 후 14일 동안은 `WITHDRAWAL_PENDING` 상태로 보존합니다.
+- `WITHDRAWAL_PENDING` 계정은 소셜 로그인으로 자동 복구되지 않으며 별도 복구 플로우를 사용합니다.
 
 ### POST `/api/auth/google`
 
@@ -465,13 +466,14 @@
 
 - 인증: 불필요
 - 상태: 구현완료
-- 클라이언트가 Google SDK로 발급받은 access token을 서버로 전달합니다.
+- 클라이언트가 Google SDK로 발급받은 ID token을 서버로 전달합니다.
+- 서버는 ID token의 서명과 `iss`, `exp`, `aud`(`GOOGLE_WEB_CLIENT_ID`)를 검증하며, Google access token 또는 별도 사용자 정보 조회 API를 사용하지 않습니다.
 
 #### Request Body
 
-| 필드        | 타입   | 필수 | 설명                |
-| ----------- | ------ | ---- | ------------------- |
-| accessToken | string | Y    | Google access token |
+| 필드    | 타입   | 필수 | 설명            |
+| ------- | ------ | ---- | --------------- |
+| idToken | string | Y    | Google ID token |
 
 #### Response 200
 
@@ -489,12 +491,14 @@
 
 #### Errors
 
-| Status | Code                      | 설명                                        |
-| ------ | ------------------------- | ------------------------------------------- |
-| 400    | ACCESS_TOKEN_REQUIRED     | accessToken 누락                            |
-| 403    | ACCOUNT_DELETED           | 탈퇴 완료된 계정                            |
-| 403    | WITHDRAWAL_PERIOD_EXPIRED | 탈퇴 유예 기간이 만료된 계정                |
-| 500    | INTERNAL_SERVER_ERROR     | 소셜 사용자 정보 조회 또는 로그인 처리 실패 |
+| Status | Code                       | 설명                         |
+| ------ | -------------------------- | ---------------------------- |
+| 400    | ID_TOKEN_REQUIRED          | idToken 누락                 |
+| 401    | INVALID_GOOGLE_ID_TOKEN    | Google ID token 검증 실패    |
+| 403    | EMAIL_NOT_VERIFIED         | Google 이메일 미인증         |
+| 403    | ACCOUNT_DELETED            | 탈퇴 완료된 계정             |
+| 409    | ACCOUNT_WITHDRAWAL_PENDING | 탈퇴 유예 상태의 계정        |
+| 500    | INTERNAL_SERVER_ERROR      | 로그인 처리 실패             |
 
 ### POST `/api/auth/kakao`
 
@@ -524,12 +528,12 @@
 
 #### Errors
 
-| Status | Code                      | 설명                                        |
-| ------ | ------------------------- | ------------------------------------------- |
-| 400    | ACCESS_TOKEN_REQUIRED     | accessToken 누락                            |
-| 403    | ACCOUNT_DELETED           | 탈퇴 완료된 계정                            |
-| 403    | WITHDRAWAL_PERIOD_EXPIRED | 탈퇴 유예 기간이 만료된 계정                |
-| 500    | INTERNAL_SERVER_ERROR     | 소셜 사용자 정보 조회 또는 로그인 처리 실패 |
+| Status | Code                       | 설명                         |
+| ------ | -------------------------- | ---------------------------- |
+| 400    | ACCESS_TOKEN_REQUIRED      | accessToken 누락             |
+| 403    | ACCOUNT_DELETED            | 탈퇴 완료된 계정             |
+| 409    | ACCOUNT_WITHDRAWAL_PENDING | 탈퇴 유예 상태의 계정        |
+| 500    | INTERNAL_SERVER_ERROR      | 로그인 처리 실패             |
 
 ### DELETE `/api/auth/withdraw`
 
@@ -538,8 +542,8 @@
 - 인증: 필요
 - 상태: 구현완료
 - 즉시 영구 삭제하지 않고 14일 유예 상태(`WITHDRAWAL_PENDING`)로 변경합니다.
-- 탈퇴 유예 기간 내 동일 소셜 계정으로 다시 로그인하면 `ACTIVE` 상태로 자동 복구되고 `withdrawalRequestedAt`은 `null`로 초기화됩니다.
-- 탈퇴 유예 기간이 만료된 계정 또는 `DELETED` 계정은 로그인할 수 없습니다.
+- 탈퇴 유예 상태의 계정은 소셜 로그인 시 `409 ACCOUNT_WITHDRAWAL_PENDING`을 반환합니다.
+- `DELETED` 계정은 로그인할 수 없습니다.
 
 #### Response 200
 

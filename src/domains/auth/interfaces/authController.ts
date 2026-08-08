@@ -18,6 +18,15 @@ function validateAccessToken(req: Request): string {
   return accessToken;
 }
 
+function validateIdToken(req: Request): string {
+  const { idToken } = req.body;
+
+  if (!idToken || typeof idToken !== 'string') {
+    throw new BadRequestError('idToken이 필요합니다.', 'ID_TOKEN_REQUIRED');
+  }
+
+  return idToken;
+}
 
 router.post(
   '/kakao',
@@ -31,8 +40,8 @@ router.post(
 router.post(
   '/google',
   asyncHandler(async (req: Request, res: Response) => {
-    const accessToken = validateAccessToken(req);
-    const result = await socialLogin('GOOGLE', accessToken);
+    const idToken = validateIdToken(req);
+    const result = await socialLogin('GOOGLE', idToken);
     res.status(200).json({ success: true, data: result });
   })
 );
