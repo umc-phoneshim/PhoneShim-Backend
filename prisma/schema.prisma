@@ -37,6 +37,15 @@ enum AgeGroup {
   FIFTIES_PLUS
 }
 
+// 사용 이유 팝업의 고정 객관식 선택지 (Figma REP-01: 여가/이동/습관/정보/기타)
+enum UsageReasonCode {
+  LEISURE
+  COMMUTE
+  HABIT
+  INFO
+  OTHER
+}
+
 model User {
   id                    String     @id @default(uuid()) @db.Uuid
   email                 String     @unique
@@ -150,16 +159,16 @@ model UsageLog {
 }
 
 model UsageReason {
-  id             String   @id @default(uuid()) @db.Uuid
-  userId         String   @map("user_id") @db.Uuid
-  monitoredAppId String   @map("monitored_app_id") @db.Uuid
-  usageLogId     String?  @map("usage_log_id") @db.Uuid
-  date           DateTime @db.Date
-  timeRangeStart DateTime @map("time_range_start")
-  timeRangeEnd   DateTime @map("time_range_end")
-  reason         String   @db.VarChar(100)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id             String          @id @default(uuid()) @db.Uuid
+  userId         String          @map("user_id") @db.Uuid
+  monitoredAppId String          @map("monitored_app_id") @db.Uuid
+  usageLogId     String?         @map("usage_log_id") @db.Uuid
+  date           DateTime        @db.Date
+  timeRangeStart DateTime        @map("time_range_start")
+  timeRangeEnd   DateTime        @map("time_range_end")
+  reason         UsageReasonCode
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   monitoredApp MonitoredApp @relation(fields: [monitoredAppId], references: [id], onDelete: Cascade)
