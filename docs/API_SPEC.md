@@ -119,7 +119,7 @@
 | Dashboard    | GET    | `/api/dashboard/daily-summary`       | 오늘 전체 사용 요약 조회    | 구현완료 |
 | AlertSetting | GET    | `/api/alert-settings`                | 하루 알림 설정 조회         | 구현완료 |
 | AlertSetting | PATCH  | `/api/alert-settings`                | 하루 알림 시간 수정         | 구현완료 |
-| Report       | GET    | `/api/reports/summary?range=`        | 주간/월간 요약 조회         | 예정     |
+| Report       | GET    | `/api/reports/summary?range=`        | 기간별 사용 사유 요약       | 구현완료 |
 | AI           | POST   | `/api/ai/daily-feedback`             | 일간 AI 피드백 생성         | 예정     |
 | AI           | POST   | `/api/ai/suggest-goal`               | 목표 시간/횟수 AI 제안      | 예정     |
 
@@ -1731,51 +1731,60 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 
 공통 정책:
 
-- 제안 팝업은 금일 스마트폰 사용 시간, 앱 진입 횟수, 사용 이유를 종합 분석한 문구를 노출합니다.
-- 요약 분석은 주간/월간 범위에서 사용 이유 데이터를 집계하고, 앱별 색상 표현은 클라이언트 표시 책임으로 둡니다.
+- **AI를 쓰지 않습니다. 리포트·제안 모두 수학적 계산 + 고정 템플릿으로 생성합니다.** (외부 AI 연동, 서버 DB 문구 생성 없음)
+- 요약(`reports/summary`)은 DAY/WEEK/MONTH 범위에서 사용 이유별로 사용 시간을 집계하고, 각 사유를 주의 앱별로 분해합니다. 앱별 색상 표현은 클라이언트 표시 책임입니다.
+- "어플 사용 분포"(앱별 총 사용량)는 이 API가 아니라 `GET /api/usage-logs?date=`(앱별 `usedMinutes`)로 조회합니다.
+- 제안 팝업(REP103)은 목표 달성 상태에 따라 제안1/2/3 문구를 골라 숫자를 채워 내려줍니다. (엔드포인트는 REP103 구현 시 `GET /api/reports/suggestion`으로 추가 예정)
 - 목표 달성 캘린더 표시는 전체 폰 목표와 주의 앱 목표를 모두 만족한 날짜에만 달성으로 간주합니다.
-- 현재 `GET /api/reports/summary`는 요약 집계 계약이며, 일별 제안 결과를 장기 저장하는 API/DB 계약은 아직 없습니다.
+- `ai/daily-feedback`, `ai/suggest-goal`은 AI 폐기로 **더 이상 쓰지 않습니다**(제안은 `reports/suggestion`으로 대체). REP103 작업 시 이 문서에서 정리합니다.
 
-### GET `/api/reports/summary?range=week|month&date=YYYY-MM-DD`
+### GET `/api/reports/summary?range=day|week|month&date=YYYY-MM-DD`
 
-주간/월간 사용 사유 요약을 조회합니다.
+REP104: 기간 동안의 사용 사유를 사유별로 집계하고, 각 사유를 주의 앱별 사용 시간으로 분해해 반환합니다. (AI 아님 — 순수 수학적 집계)
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
+- `range`: `day`(당일) / `week`(최근 7일) / `month`(최근 30일). `date`가 없으면 KST 오늘 기준.
+- 사유별 사용 시간은 `usage_reasons`의 `time_range_start~end` 구간 길이(분)를 합산합니다. 한 시간 블록에 여러 사유를 골랐으면 각 사유에 그 블록 시간이 전체로 들어갑니다.
+- 앱 색상 매핑(REP-06)은 클라이언트 표시 책임입니다.
 
 #### Query Parameters
 
-| 필드  | 타입   | 필수 | 설명                       |
-| ----- | ------ | ---- | -------------------------- |
-| range | string | Y    | `week` 또는 `month`        |
-| date  | string | N    | 기준 날짜. 없으면 KST 오늘 |
+| 필드  | 타입   | 필수 | 설명                                    |
+| ----- | ------ | ---- | --------------------------------------- |
+| range | string | Y    | `day`, `week`, `month` 중 하나          |
+| date  | string | N    | 기준 날짜 `YYYY-MM-DD`. 없으면 KST 오늘 |
 
 #### Response 200
+
+`reasons`는 사용 시간이 많은 사유부터, 각 사유의 `apps`는 사용 시간이 많은 앱부터 정렬됩니다.
 
 ```json
 {
   "success": true,
   "data": {
-    "range": "week",
-    "from": "2026-07-01",
-    "to": "2026-07-07",
-    "keywords": [
+    "range": "day",
+    "from": "2026-07-16",
+    "to": "2026-07-16",
+    "reasons": [
       {
-        "text": "휴식",
-        "count": 3
+        "reason": "LEISURE",
+        "totalMinutes": 40,
+        "apps": [
+          { "monitoredAppId": "uuid", "appName": "YouTube", "minutes": 30 },
+          { "monitoredAppId": "uuid", "appName": "KakaoTalk", "minutes": 10 }
+        ]
       }
-    ],
-    "summary": "휴식 시간에 숏폼 사용이 반복되었습니다."
+    ]
   }
 }
 ```
 
 #### Errors
 
-| Status | Code                     | 설명                  |
-| ------ | ------------------------ | --------------------- |
-| 400    | INVALID_REPORT_RANGE     | range가 올바르지 않음 |
-| 422    | INSUFFICIENT_REPORT_DATA | 최소 집계 기준 미달   |
+| Status | Code                 | 설명                                  |
+| ------ | -------------------- | ------------------------------------- |
+| 400    | INVALID_REPORT_RANGE | range가 day/week/month 중 하나가 아님 |
 
 ### POST `/api/ai/daily-feedback`
 

@@ -15,6 +15,7 @@ import timerRouter from './domains/timer/interfaces/timerRouter';
 import userRouter from './domains/user/interfaces/userRouter';
 import usageLogRouter from './domains/usageLog/interfaces/usageLogRouter';
 import usageReasonRouter from './domains/usageReason/interfaces/usageReasonRouter';
+import reportRouter from './domains/report/interfaces/reportRouter';
 import errorHandler from './shared/middlewares/errorHandler';
 import notFoundHandler from './shared/middlewares/notFoundHandler';
 import { corsOptions } from './shared/config/cors';
@@ -64,6 +65,7 @@ app.use('/api/reminders', reminderRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/device-usage', deviceUsageRouter);
 app.use('/api/alert-settings', alertSettingRouter);
+app.use('/api/reports', reportRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
