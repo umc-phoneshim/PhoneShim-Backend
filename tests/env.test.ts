@@ -4,6 +4,7 @@ let resolveJwtAccessSecret: typeof import('../src/shared/config/env').resolveJwt
 
 beforeAll(async () => {
   process.env.DATABASE_URL ||= 'postgresql://user:password@localhost:5432/phoneshim_test';
+  process.env.GOOGLE_WEB_CLIENT_ID ||= 'test-google-client-id.apps.googleusercontent.com';
   ({ resolveJwtAccessSecret } = await import('../src/shared/config/env'));
 });
 

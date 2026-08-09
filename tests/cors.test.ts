@@ -15,6 +15,7 @@ let serverUrl: string;
 
 beforeAll(async () => {
   process.env.DATABASE_URL ||= 'postgresql://user:password@localhost:5432/phoneshim_test';
+  process.env.GOOGLE_WEB_CLIENT_ID ||= 'test-google-client-id.apps.googleusercontent.com';
   ({ default: app } = await import('../src/app'));
 
   httpServer = http.createServer(app);
@@ -207,7 +208,7 @@ describe('CORS configuration', () => {
   });
 
   it('requires configured origins in production', () => {
-    expect(() => parseCorsOrigins(undefined, 'production')).toThrow(
+    expect(() => parseCorsOrigins('', 'production')).toThrow(
       'Missing required environment variable: CORS_ORIGINS'
     );
   });
