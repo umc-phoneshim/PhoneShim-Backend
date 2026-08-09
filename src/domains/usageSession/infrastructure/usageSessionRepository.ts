@@ -15,6 +15,13 @@ export async function save(usageSession: NewUsageSession) {
   });
 }
 
+// 같은 사용자·같은 앱·같은 날짜의 세션 (겹침 검사용)
+export async function findByUserAppAndDate(userId: string, monitoredAppId: string, date: Date) {
+  return prisma.usageSession.findMany({
+    where: { userId, monitoredAppId, date }
+  });
+}
+
 // REP101 타임테이블: 특정 날짜의 세션을 시작 시각 오름차순으로 조회
 export async function findAllByUserIdAndDate(userId: string, date: Date) {
   return prisma.usageSession.findMany({

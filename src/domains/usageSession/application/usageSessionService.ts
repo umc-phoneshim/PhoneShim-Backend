@@ -1,9 +1,10 @@
-import { NotFoundError } from '../../../shared/errors/appError';
+import { AppError, NotFoundError } from '../../../shared/errors/appError';
 
 import * as monitoredAppRepository from '../../monitoredApp/infrastructure/monitoredAppRepository';
 import { formatDateOnly, getKstDateOnly } from '../../usageLog/domain/usageLogEntity';
 import {
   createUsageSessionEntity,
+  hasOverlappingSession,
   type CreateUsageSessionPayload,
   type UsageSessionRecord
 } from '../domain/usageSessionEntity';
@@ -23,6 +24,18 @@ export async function createUsageSession(
   }
 
   const newUsageSession = createUsageSessionEntity(payload);
+
+  // 같은 앱,같은 날짜에 시간이 겹치는 세션이 이미 있으면 거부(타임테이블 중복 방지)
+  const sameDaySessions = await usageSessionRepository.findByUserAppAndDate(
+    newUsageSession.userId,
+    newUsageSession.monitoredAppId,
+    newUsageSession.date
+  );
+
+  if (hasOverlappingSession(newUsageSession.startTime, newUsageSession.endTime, sameDaySessions)) {
+    throw new AppError(409, 'USAGE_SESSION_OVERLAP', 'Usage session overlaps an existing session');
+  }
+
   const saved = await usageSessionRepository.save(newUsageSession);
 
   return {

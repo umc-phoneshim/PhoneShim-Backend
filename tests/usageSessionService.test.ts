@@ -13,17 +13,18 @@ vi.mock('../src/domains/monitoredApp/infrastructure/monitoredAppRepository', () 
 
 vi.mock('../src/domains/usageSession/infrastructure/usageSessionRepository', () => ({
   save: vi.fn(),
+  findByUserAppAndDate: vi.fn(),
   findAllByUserIdAndDate: vi.fn()
 }));
 
 const findByIdAndUserIdMock = vi.mocked(monitoredAppRepository.findByIdAndUserId);
 const saveMock = vi.mocked(usageSessionRepository.save);
+const findByUserAppAndDateMock = vi.mocked(usageSessionRepository.findByUserAppAndDate);
 const findAllByUserIdAndDateMock = vi.mocked(usageSessionRepository.findAllByUserIdAndDate);
 
 const payload = {
   userId: 'user-1',
   monitoredAppId: 'app-1',
-  date: '2026-07-16',
   startTime: '2026-07-16T12:00:00.000Z',
   endTime: '2026-07-16T12:30:00.000Z'
 };
@@ -58,8 +59,25 @@ describe('usageSessionService', () => {
     expect(saveMock).not.toHaveBeenCalled();
   });
 
-  it('saves a session and formats the date', async () => {
+  it('rejects a session that overlaps an existing one on the same day', async () => {
     findByIdAndUserIdMock.mockResolvedValueOnce({ id: 'app-1' } as never);
+    findByUserAppAndDateMock.mockResolvedValueOnce([
+      {
+        startTime: new Date('2026-07-16T12:15:00.000Z'),
+        endTime: new Date('2026-07-16T12:45:00.000Z')
+      }
+    ] as never);
+
+    await expect(createUsageSession(payload)).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'USAGE_SESSION_OVERLAP'
+    });
+    expect(saveMock).not.toHaveBeenCalled();
+  });
+
+  it('saves a session (date derived from startTime) when there is no overlap', async () => {
+    findByIdAndUserIdMock.mockResolvedValueOnce({ id: 'app-1' } as never);
+    findByUserAppAndDateMock.mockResolvedValueOnce([] as never);
     saveMock.mockResolvedValueOnce(savedRow as never);
 
     await expect(createUsageSession(payload)).resolves.toMatchObject({
@@ -68,6 +86,12 @@ describe('usageSessionService', () => {
       startTime: new Date('2026-07-16T12:00:00.000Z'),
       endTime: new Date('2026-07-16T12:30:00.000Z')
     });
+    // 겹침 검사는 startTime에서 파생한 날짜(2026-07-16)로 조회
+    expect(findByUserAppAndDateMock).toHaveBeenCalledWith(
+      'user-1',
+      'app-1',
+      new Date('2026-07-16T00:00:00.000Z')
+    );
   });
 
   it('gets sessions for a date with a formatted date string', async () => {

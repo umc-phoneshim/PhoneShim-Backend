@@ -1,17 +1,11 @@
 export type CreateUsageSessionRequest = {
   monitoredAppId: string;
-  date: string;
   startTime: string;
   endTime: string;
 };
 
 export const createUsageSessionRequestSchema = {
   monitoredAppId: {
-    type: 'string',
-    required: true,
-    minLength: 1
-  },
-  date: {
     type: 'string',
     required: true,
     minLength: 1

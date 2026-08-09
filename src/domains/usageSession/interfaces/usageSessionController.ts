@@ -20,7 +20,6 @@ export const createUsageSession = asyncHandler(async (req, res) => {
   const result = await usageSessionService.createUsageSession({
     userId,
     monitoredAppId: body.monitoredAppId,
-    date: body.date,
     startTime: body.startTime,
     endTime: body.endTime
   });
