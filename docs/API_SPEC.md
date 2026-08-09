@@ -114,8 +114,8 @@
 | DeviceUsage  | PUT    | `/api/device-usage`                  | 기기 전체 사용량 기록/갱신  | 구현완료 |
 | UsageReason  | POST   | `/api/usage-reasons`                 | 사용 사유 입력              | 구현완료 |
 | UsageReason  | GET    | `/api/usage-reasons/calendar?month=` | 날짜별 사유 입력 여부 조회  | 예정     |
-| UsageSession | POST   | `/api/usage-sessions`                | 앱 사용 세션(시작~끝) 저장  | 예정     |
-| UsageSession | GET    | `/api/usage-sessions?date=`          | 날짜별 타임테이블 세션 조회 | 예정     |
+| UsageSession | POST   | `/api/usage-sessions`                | 앱 사용 세션(시작~끝) 저장  | 구현완료 |
+| UsageSession | GET    | `/api/usage-sessions?date=`          | 날짜별 타임테이블 세션 조회 | 구현완료 |
 | Dashboard    | GET    | `/api/dashboard/daily-summary`       | 오늘 전체 사용 요약 조회    | 구현완료 |
 | AlertSetting | GET    | `/api/alert-settings`                | 하루 알림 설정 조회         | 구현완료 |
 | AlertSetting | PATCH  | `/api/alert-settings`                | 하루 알림 시간 수정         | 구현완료 |
@@ -458,6 +458,7 @@
 - 동일 이메일 중복 가입은 허용하지 않습니다.
 - 같은 이메일로 다른 소셜 제공자가 들어오면 계정 연동 플로우를 사용합니다.
 - 탈퇴 요청 후 14일 동안은 `WITHDRAWAL_PENDING` 상태로 보존합니다.
+- `WITHDRAWAL_PENDING` 계정은 소셜 로그인으로 자동 복구되지 않으며 별도 복구 플로우를 사용합니다.
 
 ### POST `/api/auth/google`
 
@@ -465,13 +466,14 @@
 
 - 인증: 불필요
 - 상태: 구현완료
-- 클라이언트가 Google SDK로 발급받은 access token을 서버로 전달합니다.
+- 클라이언트가 Google SDK로 발급받은 ID token을 서버로 전달합니다.
+- 서버는 ID token의 서명과 `iss`, `exp`, `aud`(`GOOGLE_WEB_CLIENT_ID`)를 검증하며, Google access token 또는 별도 사용자 정보 조회 API를 사용하지 않습니다.
 
 #### Request Body
 
-| 필드        | 타입   | 필수 | 설명                |
-| ----------- | ------ | ---- | ------------------- |
-| accessToken | string | Y    | Google access token |
+| 필드    | 타입   | 필수 | 설명            |
+| ------- | ------ | ---- | --------------- |
+| idToken | string | Y    | Google ID token |
 
 #### Response 200
 
@@ -489,12 +491,14 @@
 
 #### Errors
 
-| Status | Code                      | 설명                                        |
-| ------ | ------------------------- | ------------------------------------------- |
-| 400    | ACCESS_TOKEN_REQUIRED     | accessToken 누락                            |
-| 403    | ACCOUNT_DELETED           | 탈퇴 완료된 계정                            |
-| 403    | WITHDRAWAL_PERIOD_EXPIRED | 탈퇴 유예 기간이 만료된 계정                |
-| 500    | INTERNAL_SERVER_ERROR     | 소셜 사용자 정보 조회 또는 로그인 처리 실패 |
+| Status | Code                       | 설명                         |
+| ------ | -------------------------- | ---------------------------- |
+| 400    | ID_TOKEN_REQUIRED          | idToken 누락                 |
+| 401    | INVALID_GOOGLE_ID_TOKEN    | Google ID token 검증 실패    |
+| 403    | EMAIL_NOT_VERIFIED         | Google 이메일 미인증         |
+| 403    | ACCOUNT_DELETED            | 탈퇴 완료된 계정             |
+| 409    | ACCOUNT_WITHDRAWAL_PENDING | 탈퇴 유예 상태의 계정        |
+| 500    | INTERNAL_SERVER_ERROR      | 로그인 처리 실패             |
 
 ### POST `/api/auth/kakao`
 
@@ -524,12 +528,12 @@
 
 #### Errors
 
-| Status | Code                      | 설명                                        |
-| ------ | ------------------------- | ------------------------------------------- |
-| 400    | ACCESS_TOKEN_REQUIRED     | accessToken 누락                            |
-| 403    | ACCOUNT_DELETED           | 탈퇴 완료된 계정                            |
-| 403    | WITHDRAWAL_PERIOD_EXPIRED | 탈퇴 유예 기간이 만료된 계정                |
-| 500    | INTERNAL_SERVER_ERROR     | 소셜 사용자 정보 조회 또는 로그인 처리 실패 |
+| Status | Code                       | 설명                         |
+| ------ | -------------------------- | ---------------------------- |
+| 400    | ACCESS_TOKEN_REQUIRED      | accessToken 누락             |
+| 403    | ACCOUNT_DELETED            | 탈퇴 완료된 계정             |
+| 409    | ACCOUNT_WITHDRAWAL_PENDING | 탈퇴 유예 상태의 계정        |
+| 500    | INTERNAL_SERVER_ERROR      | 로그인 처리 실패             |
 
 ### DELETE `/api/auth/withdraw`
 
@@ -538,8 +542,8 @@
 - 인증: 필요
 - 상태: 구현완료
 - 즉시 영구 삭제하지 않고 14일 유예 상태(`WITHDRAWAL_PENDING`)로 변경합니다.
-- 탈퇴 유예 기간 내 동일 소셜 계정으로 다시 로그인하면 `ACTIVE` 상태로 자동 복구되고 `withdrawalRequestedAt`은 `null`로 초기화됩니다.
-- 탈퇴 유예 기간이 만료된 계정 또는 `DELETED` 계정은 로그인할 수 없습니다.
+- 탈퇴 유예 상태의 계정은 소셜 로그인 시 `409 ACCOUNT_WITHDRAWAL_PENDING`을 반환합니다.
+- `DELETED` 계정은 로그인할 수 없습니다.
 
 #### Response 200
 
@@ -1569,14 +1573,15 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 앱 사용 세션(시작~끝 시각) 하나를 저장합니다. REP101 타임테이블의 원본 데이터입니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
+- 세션 날짜(`date`)는 요청으로 받지 않고 `startTime`의 KST 날짜로 서버가 파생합니다. (자정을 넘는 세션은 시작한 날에 귀속)
+- 같은 사용자·같은 앱·같은 날짜에 시간이 겹치는 세션은 저장할 수 없습니다.
 
 #### Request Body
 
 | 필드           | 타입   | 필수 | 설명                                                 |
 | -------------- | ------ | ---- | ---------------------------------------------------- |
 | monitoredAppId | string | Y    | 주의 앱 ID                                           |
-| date           | string | Y    | 사용 날짜. `YYYY-MM-DD` (KST 기준)                   |
 | startTime      | string | Y    | 사용 시작 시각 ISO string                            |
 | endTime        | string | Y    | 사용 종료 시각 ISO string. `startTime`보다 뒤여야 함 |
 
@@ -1600,17 +1605,18 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 
 #### Errors
 
-| Status | Code                    | 설명                                            |
-| ------ | ----------------------- | ----------------------------------------------- |
-| 400    | VALIDATION_ERROR        | 필수값 누락 또는 `endTime`이 `startTime`보다 앞 |
-| 404    | MONITORED_APP_NOT_FOUND | 주의 앱이 없거나 본인 소유가 아님               |
+| Status | Code                    | 설명                                               |
+| ------ | ----------------------- | -------------------------------------------------- |
+| 400    | VALIDATION_ERROR        | 필수값 누락 또는 `endTime`이 `startTime`보다 앞    |
+| 404    | MONITORED_APP_NOT_FOUND | 주의 앱이 없거나 본인 소유가 아님                  |
+| 409    | USAGE_SESSION_OVERLAP   | 같은 앱·같은 날짜에 시간이 겹치는 세션이 이미 있음 |
 
 ### GET `/api/usage-sessions?date=YYYY-MM-DD`
 
 특정 날짜의 앱 사용 세션을 `startTime` 오름차순으로 조회합니다. `date`를 생략하면 KST 기준 오늘입니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Response 200
 

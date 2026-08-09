@@ -1,5 +1,8 @@
 // src/domains/auth/infrastructure/googleAuthClient.ts
-import { UnauthorizedError, BadRequestError } from '../../../shared/errors/appError';
+import { OAuth2Client, type TokenPayload } from 'google-auth-library';
+
+import { env } from '../../../shared/config/env';
+import { ForbiddenError, UnauthorizedError } from '../../../shared/errors/appError';
 
 interface GoogleUserInfo {
   providerUserId: string;
@@ -7,26 +10,32 @@ interface GoogleUserInfo {
   name: string;
 }
 
-export async function fetchGoogleUserInfo(accessToken: string): Promise<GoogleUserInfo> {
-  const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+const googleClient = new OAuth2Client(env.google.webClientId);
 
-  if (!response.ok) {
-    throw new UnauthorizedError('유효하지 않은 구글 토큰입니다.', 'INVALID_TOKEN');
+export async function fetchGoogleUserInfo(idToken: string): Promise<GoogleUserInfo> {
+  let payload: TokenPayload | undefined;
+
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: env.google.webClientId
+    });
+    payload = ticket.getPayload() as typeof payload;
+  } catch {
+    throw new UnauthorizedError('유효하지 않은 구글 ID 토큰입니다.', 'INVALID_GOOGLE_ID_TOKEN');
   }
 
-  const data = await response.json();
-
-  if (!data.sub || typeof data.sub !== 'string') {
-    throw new UnauthorizedError('유효하지 않은 구글 토큰입니다. (sub 누락)', 'INVALID_TOKEN');
+  if (!payload?.sub || typeof payload.sub !== 'string') {
+    throw new UnauthorizedError('유효하지 않은 구글 ID 토큰입니다. (sub 누락)', 'INVALID_GOOGLE_ID_TOKEN');
   }
 
-  if (!data.email) {
-    throw new BadRequestError('구글 이메일 제공 동의가 필요합니다.', 'EMAIL_PERMISSION_REQUIRED');
+  if (!payload.email || payload.email_verified !== true) {
+    throw new ForbiddenError('구글 이메일 인증이 필요합니다.', 'EMAIL_NOT_VERIFIED');
   }
 
-  return { providerUserId: data.sub, email: data.email, name: data.name };
+  return {
+    providerUserId: payload.sub,
+    email: payload.email,
+    name: payload.name || payload.email.split('@')[0] || payload.email
+  };
 }

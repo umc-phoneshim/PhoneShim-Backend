@@ -1,6 +1,6 @@
 import prisma from '../../../shared/database/prismaClient';
 import { signAccessToken } from '../../../shared/auth/jwt';
-import { ForbiddenError } from '../../../shared/errors/appError';
+import { AppError, ForbiddenError } from '../../../shared/errors/appError';
 import {
   isPrismaKnownError,
   PRISMA_UNIQUE_CONSTRAINT_ERROR
@@ -9,8 +9,6 @@ import { fetchKakaoUserInfo } from '../infrastructure/kakaoAuthClient';
 import { fetchGoogleUserInfo } from '../infrastructure/googleAuthClient';
 
 type Provider = 'KAKAO' | 'GOOGLE';
-
-const WITHDRAWAL_GRACE_PERIOD_DAYS = 14;
 
 function isUniqueConstraintError(error: unknown): boolean {
   return isPrismaKnownError(error, PRISMA_UNIQUE_CONSTRAINT_ERROR);
@@ -67,24 +65,13 @@ async function createUserWithSocialAccount(
   });
 }
 
-function isWithinGracePeriod(withdrawalRequestedAt: Date | null): boolean {
-  if (!withdrawalRequestedAt) {
-    return true;
-  }
-
-  const elapsedMs = Date.now() - withdrawalRequestedAt.getTime();
-  const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
-
-  return elapsedDays <= WITHDRAWAL_GRACE_PERIOD_DAYS;
-}
-
 type LoginGuardedUser = {
   id: string;
   status: string;
   withdrawalRequestedAt: Date | null;
 };
 
-async function guardAndReactivateAccount<T extends LoginGuardedUser>(user: T): Promise<T> {
+function guardLoginAccount<T extends LoginGuardedUser>(user: T): T {
   if (user.status === 'DELETED') {
     throw new ForbiddenError('탈퇴 완료된 계정입니다.', 'ACCOUNT_DELETED');
   }
@@ -93,20 +80,7 @@ async function guardAndReactivateAccount<T extends LoginGuardedUser>(user: T): P
     return user;
   }
 
-  if (!isWithinGracePeriod(user.withdrawalRequestedAt)) {
-    throw new ForbiddenError(
-      '탈퇴 유예 기간(14일)이 만료되어 더 이상 로그인할 수 없습니다.',
-      'WITHDRAWAL_PERIOD_EXPIRED'
-    );
-  }
-
-  return prisma.user.update({
-    where: { id: user.id },
-    data: {
-      status: 'ACTIVE',
-      withdrawalRequestedAt: null
-    }
-  }) as unknown as T;
+  throw new AppError(409, 'ACCOUNT_WITHDRAWAL_PENDING', '탈퇴 유예 상태의 계정입니다.');
 }
 
 export async function socialLogin(provider: Provider, accessToken: string) {
@@ -128,7 +102,7 @@ export async function socialLogin(provider: Provider, accessToken: string) {
 
     try {
       if (existingUser) {
-        const guardedExistingUser = await guardAndReactivateAccount(existingUser);
+        const guardedExistingUser = guardLoginAccount(existingUser);
         user = await linkSocialAccountToUser(provider, userInfo, guardedExistingUser.id);
         isNewUser = false;
         alreadyGuarded = true;
@@ -152,7 +126,7 @@ export async function socialLogin(provider: Provider, accessToken: string) {
   }
 
   if (!alreadyGuarded) {
-    user = await guardAndReactivateAccount(user);
+    user = guardLoginAccount(user);
   }
 
   const token = signAccessToken({ userId: user.id, email: user.email });
