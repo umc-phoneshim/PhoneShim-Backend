@@ -114,8 +114,8 @@
 | DeviceUsage  | PUT    | `/api/device-usage`                  | 기기 전체 사용량 기록/갱신  | 구현완료 |
 | UsageReason  | POST   | `/api/usage-reasons`                 | 사용 사유 입력              | 구현완료 |
 | UsageReason  | GET    | `/api/usage-reasons/calendar?month=` | 날짜별 사유 입력 여부 조회  | 예정     |
-| UsageSession | POST   | `/api/usage-sessions`                | 앱 사용 세션(시작~끝) 저장  | 예정     |
-| UsageSession | GET    | `/api/usage-sessions?date=`          | 날짜별 타임테이블 세션 조회 | 예정     |
+| UsageSession | POST   | `/api/usage-sessions`                | 앱 사용 세션(시작~끝) 저장  | 구현완료 |
+| UsageSession | GET    | `/api/usage-sessions?date=`          | 날짜별 타임테이블 세션 조회 | 구현완료 |
 | Dashboard    | GET    | `/api/dashboard/daily-summary`       | 오늘 전체 사용 요약 조회    | 구현완료 |
 | AlertSetting | GET    | `/api/alert-settings`                | 하루 알림 설정 조회         | 구현완료 |
 | AlertSetting | PATCH  | `/api/alert-settings`                | 하루 알림 시간 수정         | 구현완료 |
@@ -1573,14 +1573,15 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 앱 사용 세션(시작~끝 시각) 하나를 저장합니다. REP101 타임테이블의 원본 데이터입니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
+- 세션 날짜(`date`)는 요청으로 받지 않고 `startTime`의 KST 날짜로 서버가 파생합니다. (자정을 넘는 세션은 시작한 날에 귀속)
+- 같은 사용자·같은 앱·같은 날짜에 시간이 겹치는 세션은 저장할 수 없습니다.
 
 #### Request Body
 
 | 필드           | 타입   | 필수 | 설명                                                 |
 | -------------- | ------ | ---- | ---------------------------------------------------- |
 | monitoredAppId | string | Y    | 주의 앱 ID                                           |
-| date           | string | Y    | 사용 날짜. `YYYY-MM-DD` (KST 기준)                   |
 | startTime      | string | Y    | 사용 시작 시각 ISO string                            |
 | endTime        | string | Y    | 사용 종료 시각 ISO string. `startTime`보다 뒤여야 함 |
 
@@ -1604,17 +1605,18 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 
 #### Errors
 
-| Status | Code                    | 설명                                            |
-| ------ | ----------------------- | ----------------------------------------------- |
-| 400    | VALIDATION_ERROR        | 필수값 누락 또는 `endTime`이 `startTime`보다 앞 |
-| 404    | MONITORED_APP_NOT_FOUND | 주의 앱이 없거나 본인 소유가 아님               |
+| Status | Code                    | 설명                                               |
+| ------ | ----------------------- | -------------------------------------------------- |
+| 400    | VALIDATION_ERROR        | 필수값 누락 또는 `endTime`이 `startTime`보다 앞    |
+| 404    | MONITORED_APP_NOT_FOUND | 주의 앱이 없거나 본인 소유가 아님                  |
+| 409    | USAGE_SESSION_OVERLAP   | 같은 앱·같은 날짜에 시간이 겹치는 세션이 이미 있음 |
 
 ### GET `/api/usage-sessions?date=YYYY-MM-DD`
 
 특정 날짜의 앱 사용 세션을 `startTime` 오름차순으로 조회합니다. `date`를 생략하면 KST 기준 오늘입니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Response 200
 
