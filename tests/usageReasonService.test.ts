@@ -9,11 +9,11 @@ vi.mock('../src/domains/monitoredApp/infrastructure/monitoredAppRepository', () 
 }));
 
 vi.mock('../src/domains/usageReason/infrastructure/usageReasonRepository', () => ({
-  save: vi.fn()
+  saveMany: vi.fn()
 }));
 
 const findByIdAndUserIdMock = vi.mocked(monitoredAppRepository.findByIdAndUserId);
-const saveMock = vi.mocked(usageReasonRepository.save);
+const saveManyMock = vi.mocked(usageReasonRepository.saveMany);
 
 const payload = {
   userId: 'user-1',
@@ -21,8 +21,21 @@ const payload = {
   date: '2026-07-16',
   timeRangeStart: '2026-07-16T12:00:00.000Z',
   timeRangeEnd: '2026-07-16T12:30:00.000Z',
-  reason: 'needed it'
+  reasonCodes: ['LEISURE', 'HABIT']
 };
+
+const savedRow = (id: string, reason: string) => ({
+  id,
+  userId: 'user-1',
+  monitoredAppId: 'app-1',
+  usageLogId: null,
+  date: new Date('2026-07-16T00:00:00.000Z'),
+  timeRangeStart: new Date('2026-07-16T12:00:00.000Z'),
+  timeRangeEnd: new Date('2026-07-16T12:30:00.000Z'),
+  reason,
+  createdAt: new Date('2026-07-16T13:00:00.000Z'),
+  updatedAt: new Date('2026-07-16T13:00:00.000Z')
+});
 
 describe('usageReasonService', () => {
   beforeEach(() => {
@@ -41,7 +54,7 @@ describe('usageReasonService', () => {
       statusCode: 404,
       code: 'MONITORED_APP_NOT_FOUND'
     });
-    expect(saveMock).not.toHaveBeenCalled();
+    expect(saveManyMock).not.toHaveBeenCalled();
   });
 
   it('rejects creating a usage reason outside the allowed time window', async () => {
@@ -52,29 +65,21 @@ describe('usageReasonService', () => {
       statusCode: 403,
       code: 'USAGE_REASON_TIME_FORBIDDEN'
     });
-    expect(saveMock).not.toHaveBeenCalled();
+    expect(saveManyMock).not.toHaveBeenCalled();
   });
 
-  it('saves and formats a usage reason inside the allowed time window', async () => {
+  it('saves one record per reason code inside the allowed time window', async () => {
     vi.setSystemTime(new Date('2026-07-16T13:00:00.000Z'));
     findByIdAndUserIdMock.mockResolvedValueOnce({ id: 'app-1' } as never);
-    saveMock.mockResolvedValueOnce({
-      id: 'reason-1',
-      userId: 'user-1',
-      monitoredAppId: 'app-1',
-      usageLogId: null,
-      date: new Date('2026-07-16T00:00:00.000Z'),
-      timeRangeStart: new Date('2026-07-16T12:00:00.000Z'),
-      timeRangeEnd: new Date('2026-07-16T12:30:00.000Z'),
-      reason: 'needed it',
-      createdAt: new Date('2026-07-16T13:00:00.000Z'),
-      updatedAt: new Date('2026-07-16T13:00:00.000Z')
-    });
+    saveManyMock.mockResolvedValueOnce([
+      savedRow('reason-1', 'LEISURE'),
+      savedRow('reason-2', 'HABIT')
+    ] as never);
 
-    await expect(createUsageReason(payload)).resolves.toMatchObject({
-      id: 'reason-1',
-      date: '2026-07-16',
-      reason: 'needed it'
-    });
+    await expect(createUsageReason(payload)).resolves.toMatchObject([
+      { id: 'reason-1', date: '2026-07-16', reason: 'LEISURE' },
+      { id: 'reason-2', date: '2026-07-16', reason: 'HABIT' }
+    ]);
+    expect(saveManyMock).toHaveBeenCalledOnce();
   });
 });

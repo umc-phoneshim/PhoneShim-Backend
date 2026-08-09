@@ -13,8 +13,9 @@ export async function getDailyUsageSummary(userId: string) {
   ensureUserId(userId);
 
   const date = getTodayInKst();
+  // 목표 대비 사용량은 폰 전체 스크린타임 기준으로 판정합니다(주의 앱 합계 아님).
   const [usedMinutes, targetMinutes] = await Promise.all([
-    dashboardRepository.sumUsedMinutes(userId, date),
+    dashboardRepository.findDeviceUsedMinutes(userId, date),
     dashboardRepository.findTotalTargetMinutes(userId)
   ]);
 

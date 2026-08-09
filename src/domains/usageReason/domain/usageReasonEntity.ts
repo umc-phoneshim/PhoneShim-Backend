@@ -2,6 +2,10 @@ import { BadRequestError } from '../../../shared/errors/appError';
 
 import { getKstDateOnly } from '../../usageLog/domain/usageLogEntity';
 
+// 사용 이유 팝업의 고정 객관식 선택지 (Figma REP-01: 여가/이동/습관/정보/기타).
+export const USAGE_REASON_CODES = ['LEISURE', 'COMMUTE', 'HABIT', 'INFO', 'OTHER'] as const;
+export type UsageReasonCode = (typeof USAGE_REASON_CODES)[number];
+
 export type UsageReason = {
   id: string;
   userId: string;
@@ -10,11 +14,12 @@ export type UsageReason = {
   date: Date;
   timeRangeStart: Date;
   timeRangeEnd: Date;
-  reason: string;
+  reason: UsageReasonCode;
   createdAt: Date;
   updatedAt: Date;
 };
 
+// 한 시간 블록에 대해 고른 사용 이유 코드 목록을 받음(복수선택)
 export type CreateUsageReasonPayload = {
   userId: string;
   monitoredAppId: string;
@@ -22,7 +27,7 @@ export type CreateUsageReasonPayload = {
   date: string;
   timeRangeStart: string;
   timeRangeEnd: string;
-  reason: string;
+  reasonCodes: string[];
 };
 
 export type NewUsageReason = {
@@ -32,7 +37,7 @@ export type NewUsageReason = {
   date: Date;
   timeRangeStart: Date;
   timeRangeEnd: Date;
-  reason: string;
+  reason: UsageReasonCode;
 };
 
 export type UsageReasonRecord = {
@@ -43,12 +48,10 @@ export type UsageReasonRecord = {
   date: string;
   timeRangeStart: Date;
   timeRangeEnd: Date;
-  reason: string;
+  reason: UsageReasonCode;
   createdAt: Date;
   updatedAt: Date;
 };
-
-const REASON_MAX_LENGTH = 100;
 
 const HOUR_MS = 60 * 60 * 1000;
 const HOURS_IN_A_DAY = 24;
@@ -84,24 +87,32 @@ function parseTime(value: string, fieldName: string): Date {
   return parsed;
 }
 
-function validateReason(value: string): string {
-  const trimmed = value.trim();
-
-  if (!trimmed) {
-    throw new BadRequestError('reason is required', 'VALIDATION_ERROR');
+function validateReasonCodes(codes: string[]): UsageReasonCode[] {
+  if (codes.length === 0) {
+    throw new BadRequestError('reasonCodes must include at least one reason', 'VALIDATION_ERROR');
   }
 
-  if (trimmed.length > REASON_MAX_LENGTH) {
-    throw new BadRequestError(
-      `reason must be ${REASON_MAX_LENGTH} characters or fewer`,
-      'VALIDATION_ERROR'
-    );
+  const validatedCodes: UsageReasonCode[] = [];
+
+  for (const code of codes) {
+    if (!USAGE_REASON_CODES.includes(code as UsageReasonCode)) {
+      throw new BadRequestError(
+        `reasonCodes must be one of: ${USAGE_REASON_CODES.join(', ')}`,
+        'VALIDATION_ERROR'
+      );
+    }
+
+    // 같은 코드를 여러 번 보내도 한 번만 저장합니다.
+    if (!validatedCodes.includes(code as UsageReasonCode)) {
+      validatedCodes.push(code as UsageReasonCode);
+    }
   }
 
-  return trimmed;
+  return validatedCodes;
 }
 
-export function createUsageReasonEntity(payload: CreateUsageReasonPayload): NewUsageReason {
+// 한 시간 블록에 여러 사용 이유를 고를 수 있으므로, 고른 코드마다 저장용 엔티티를 하나씩 만듭니다.
+export function createUsageReasonEntities(payload: CreateUsageReasonPayload): NewUsageReason[] {
   const timeRangeStart = parseTime(payload.timeRangeStart, 'timeRangeStart');
 
   const timeRangeEnd = parseTime(payload.timeRangeEnd, 'timeRangeEnd');
@@ -110,13 +121,16 @@ export function createUsageReasonEntity(payload: CreateUsageReasonPayload): NewU
     throw new BadRequestError('timeRangeEnd must be after timeRangeStart', 'VALIDATION_ERROR');
   }
 
-  return {
+  const reasonCodes = validateReasonCodes(payload.reasonCodes);
+  const date = getKstDateOnly(payload.date);
+
+  return reasonCodes.map((reason) => ({
     userId: payload.userId,
     monitoredAppId: payload.monitoredAppId,
     usageLogId: payload.usageLogId ?? null,
-    date: getKstDateOnly(payload.date),
+    date,
     timeRangeStart,
     timeRangeEnd,
-    reason: validateReason(payload.reason)
-  };
+    reason
+  }));
 }

@@ -1,12 +1,14 @@
 import prisma from '../../../shared/database/prismaClient';
 
-export async function sumUsedMinutes(userId: string, date: Date): Promise<number> {
-  const result = await prisma.usageLog.aggregate({
-    where: { userId, date },
-    _sum: { usedMinutes: true }
+// 메인 화면 오늘 요약은 폰 전체 스크린타임 기준입니다(주의 앱 사용량 합계 아님).
+// 그 날 daily_device_usage 기록이 없으면 아직 사용 데이터가 없는 것으로 보고 0을 반환합니다.
+export async function findDeviceUsedMinutes(userId: string, date: Date): Promise<number> {
+  const deviceUsage = await prisma.dailyDeviceUsage.findUnique({
+    where: { userId_date: { userId, date } },
+    select: { totalUsedMinutes: true }
   });
 
-  return result._sum.usedMinutes ?? 0;
+  return deviceUsage?.totalUsedMinutes ?? 0;
 }
 
 export async function findTotalTargetMinutes(userId: string): Promise<number | null> {

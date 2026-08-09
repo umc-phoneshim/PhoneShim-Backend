@@ -1375,8 +1375,8 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 - 주의 앱 사용 시간/진입 횟수는 클라이언트 스크린타임 엔진이 수집하고 백엔드는 일별 집계 저장/조회 계약을 제공합니다.
 - 주의 앱 진입 시 사용 이유 입력 팝업 호출은 클라이언트 책임입니다.
 - 같은 주의 앱을 종료 후 1분 이내 재진입하면 사용 이유를 다시 입력하지 않아도 됩니다.
-- 사용 이유를 선택하지 않고 팝업을 닫으면 클라이언트는 `기타` 사유로 저장합니다.
-- 현재 API의 `reason`은 문자열 자유 입력 계약입니다. Figma 정책의 객관식 선택지 코드가 확정되면 enum/code 필드 추가를 검토합니다.
+- 사용 이유를 선택하지 않고 팝업을 닫으면 클라이언트는 `OTHER`(기타)를 선택한 것으로 저장합니다.
+- 사용 이유는 고정 객관식 코드(`LEISURE`/`COMMUTE`/`HABIT`/`INFO`/`OTHER`)이며, 체크박스로 복수 선택할 수 있습니다. 서버는 고른 코드마다 레코드를 하나씩 저장합니다.
 
 ### GET `/api/usage-logs?date=YYYY-MM-DD`
 
@@ -1485,45 +1485,51 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 - 인증: 필요
 - 상태: 구현완료
 - 입력/수정 가능 시간: 당일 22:00 ~ 익일 10:00
+- 사용 이유는 고정 객관식 코드입니다: `LEISURE`(여가 시간), `COMMUTE`(이동 시간 중), `HABIT`(습관적으로), `INFO`(정보를 얻기 위해), `OTHER`(기타).
+- 체크박스로 여러 개를 고를 수 있으며, 고른 코드마다 사용 사유 레코드가 하나씩 생성됩니다. 같은 코드를 중복으로 보내면 한 번만 저장됩니다.
 
 #### Request Body
 
-| 필드           | 타입   | 필수 | 설명                           |
-| -------------- | ------ | ---- | ------------------------------ |
-| monitoredAppId | string | Y    | 주의 앱 ID                     |
-| usageLogId     | string | N    | 연결된 일별 사용 기록 ID       |
-| date           | string | Y    | 사용 날짜. `YYYY-MM-DD`        |
-| timeRangeStart | string | Y    | 사용 시간 구간 시작 ISO string |
-| timeRangeEnd   | string | Y    | 사용 시간 구간 종료 ISO string |
-| reason         | string | Y    | 사용 사유. 최대 100자          |
+| 필드           | 타입     | 필수 | 설명                                                      |
+| -------------- | -------- | ---- | --------------------------------------------------------- |
+| monitoredAppId | string   | Y    | 주의 앱 ID                                                |
+| usageLogId     | string   | N    | 연결된 일별 사용 기록 ID                                  |
+| date           | string   | Y    | 사용 날짜. `YYYY-MM-DD`                                   |
+| timeRangeStart | string   | Y    | 사용 시간 구간 시작 ISO string                            |
+| timeRangeEnd   | string   | Y    | 사용 시간 구간 종료 ISO string                            |
+| reasonCodes    | string[] | Y    | 선택한 사용 이유 코드 목록. 최소 1개, 위 5개 코드 중 선택 |
 
 #### Response 201
+
+고른 코드마다 레코드가 하나씩 생성되므로 `data`는 배열입니다.
 
 ```json
 {
   "success": true,
-  "data": {
-    "id": "uuid",
-    "userId": "uuid",
-    "monitoredAppId": "uuid",
-    "usageLogId": "uuid",
-    "date": "2026-07-07",
-    "timeRangeStart": "2026-07-07T12:00:00.000Z",
-    "timeRangeEnd": "2026-07-07T12:30:00.000Z",
-    "reason": "휴식 중 시청",
-    "createdAt": "2026-07-07T22:10:00.000Z",
-    "updatedAt": "2026-07-07T22:10:00.000Z"
-  }
+  "data": [
+    {
+      "id": "uuid",
+      "userId": "uuid",
+      "monitoredAppId": "uuid",
+      "usageLogId": "uuid",
+      "date": "2026-07-07",
+      "timeRangeStart": "2026-07-07T12:00:00.000Z",
+      "timeRangeEnd": "2026-07-07T12:30:00.000Z",
+      "reason": "LEISURE",
+      "createdAt": "2026-07-07T22:10:00.000Z",
+      "updatedAt": "2026-07-07T22:10:00.000Z"
+    }
+  ]
 }
 ```
 
 #### Errors
 
-| Status | Code                        | 설명                              |
-| ------ | --------------------------- | --------------------------------- |
-| 400    | VALIDATION_ERROR            | 필수값 누락 또는 사유 100자 초과  |
-| 403    | USAGE_REASON_TIME_FORBIDDEN | 입력 가능 시간대가 아님           |
-| 404    | MONITORED_APP_NOT_FOUND     | 주의 앱이 없거나 본인 소유가 아님 |
+| Status | Code                        | 설명                                                     |
+| ------ | --------------------------- | -------------------------------------------------------- |
+| 400    | VALIDATION_ERROR            | 필수값 누락, `reasonCodes`가 비었거나 허용되지 않은 코드 |
+| 403    | USAGE_REASON_TIME_FORBIDDEN | 입력 가능 시간대가 아님                                  |
+| 404    | MONITORED_APP_NOT_FOUND     | 주의 앱이 없거나 본인 소유가 아님                        |
 
 ### GET `/api/usage-logs/calendar?month=YYYY-MM`
 
@@ -1636,6 +1642,8 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 
 - 인증: 필요
 - 상태: 구현완료
+- `usedMinutes`는 폰 전체 스크린타임(`daily_device_usage.totalUsedMinutes`) 기준입니다. 주의 앱 사용량 합계가 아니라 기기 전체 사용량입니다.
+- 오늘 기기 전체 사용량(`daily_device_usage`) 기록이 아직 없으면 `usedMinutes`는 `0`입니다.
 - 전체 목표가 없으면 `targetMinutes`, `remainingMinutes`는 `null`이고 `isExceeded`는 `false`입니다.
 
 #### Response 200

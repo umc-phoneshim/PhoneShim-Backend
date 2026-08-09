@@ -4,7 +4,7 @@ export type CreateUsageReasonRequest = {
   date: string;
   timeRangeStart: string;
   timeRangeEnd: string;
-  reason: string;
+  reasonCodes: string[];
 };
 
 export const createUsageReasonRequestSchema = {
@@ -31,9 +31,8 @@ export const createUsageReasonRequestSchema = {
     required: true,
     minLength: 1
   },
-  reason: {
-    type: 'string',
-    required: true,
-    minLength: 1
+  reasonCodes: {
+    type: 'stringArray',
+    required: true
   }
 } as const;

@@ -24,7 +24,7 @@ export const createUsageReason = asyncHandler(async (req, res) => {
     date: body.date,
     timeRangeStart: body.timeRangeStart,
     timeRangeEnd: body.timeRangeEnd,
-    reason: body.reason
+    reasonCodes: body.reasonCodes
   });
 
   sendCreated(res, result);
