@@ -2,7 +2,7 @@ import { UnauthorizedError } from '../../../shared/errors/appError';
 import { sendSuccess } from '../../../shared/responses/apiResponse';
 import asyncHandler from '../../../shared/utils/asyncHandler';
 import * as userService from '../application/userService';
-import type { UpdateUserGenderAgeRequest } from './userDto';
+import type { UpdateUserGenderAgeRequest, UpdateUserNameMotivRequest } from './userDto';
 
 const getAuthenticatedUserId = (user?: Express.Request['user']): string => {
   if (!user?.userId) {
@@ -23,6 +23,15 @@ export const updateUserGenderAge = asyncHandler(async (req, res) => {
   const result = await userService.updateUserGenderAge(
     userId,
     req.body as UpdateUserGenderAgeRequest
+  );
+  sendSuccess(res, result);
+});
+
+export const updateUserNameMotiv = asyncHandler(async (req, res) => {
+  const userId = getAuthenticatedUserId(req.user);
+  const result = await userService.updateUserNameMotiv(
+    userId,
+    req.body as UpdateUserNameMotivRequest
   );
   sendSuccess(res, result);
 });
