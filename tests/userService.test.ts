@@ -6,7 +6,10 @@ import {
   updateUserGenderAge,
   updateUserNameMotiv
 } from '../src/domains/user/application/userService';
-import type { UpdateUserGenderAgeRequest } from '../src/domains/user/interfaces/userDto';
+import type {
+  UpdateUserGenderAgeRequest,
+  UpdateUserNameMotivRequest
+} from '../src/domains/user/interfaces/userDto';
 import * as userRepository from '../src/domains/user/infrastructure/userRepository';
 
 vi.mock('../src/domains/user/infrastructure/userRepository', () => ({
@@ -69,7 +72,9 @@ describe('updateUserGenderAge', () => {
   });
 
   it('rejects a missing user id', async () => {
-    await expect(getUserByUserId('')).rejects.toMatchObject({
+    await expect(
+      updateUserGenderAge('', { gender: 'MALE', ageGroup: 'TWENTIES' })
+    ).rejects.toMatchObject({
       statusCode: 400
     });
   });
@@ -77,7 +82,9 @@ describe('updateUserGenderAge', () => {
   it('rejects a missing user', async () => {
     getUserByUserIdMock.mockResolvedValueOnce(null);
 
-    await expect(getUserByUserId('user-1')).rejects.toMatchObject({
+    await expect(
+      updateUserGenderAge('user-1', { gender: 'MALE', ageGroup: 'TWENTIES' })
+    ).rejects.toMatchObject({
       statusCode: 404,
       code: 'USER_NOT_FOUND'
     });
@@ -87,6 +94,16 @@ describe('updateUserGenderAge', () => {
     getUserByUserIdMock.mockResolvedValueOnce(user);
     await expect(
       updateUserGenderAge('user-1', {} as UpdateUserGenderAgeRequest)
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      code: 'VALIDATION_ERROR'
+    });
+  });
+
+  it('rejects a null payload', async () => {
+    getUserByUserIdMock.mockResolvedValueOnce(user);
+    await expect(
+      updateUserGenderAge('user-1', null as unknown as UpdateUserGenderAgeRequest)
     ).rejects.toMatchObject({
       statusCode: 400,
       code: 'VALIDATION_ERROR'
@@ -159,7 +176,9 @@ describe('updateUserNameMotiv', () => {
   });
 
   it('rejects a missing user id', async () => {
-    await expect(getUserByUserId('')).rejects.toMatchObject({
+    await expect(
+      updateUserNameMotiv('', { name: 'Park', motivation: "Let's go!" })
+    ).rejects.toMatchObject({
       statusCode: 400
     });
   });
@@ -167,9 +186,21 @@ describe('updateUserNameMotiv', () => {
   it('rejects a missing user', async () => {
     getUserByUserIdMock.mockResolvedValueOnce(null);
 
-    await expect(getUserByUserId('user-1')).rejects.toMatchObject({
+    await expect(
+      updateUserNameMotiv('user-1', { name: 'Park', motivation: "Let's go!" })
+    ).rejects.toMatchObject({
       statusCode: 404,
       code: 'USER_NOT_FOUND'
+    });
+  });
+
+  it('rejects a null payload', async () => {
+    getUserByUserIdMock.mockResolvedValueOnce(user);
+    await expect(
+      updateUserNameMotiv('user-1', null as unknown as UpdateUserNameMotivRequest)
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      code: 'VALIDATION_ERROR'
     });
   });
 
