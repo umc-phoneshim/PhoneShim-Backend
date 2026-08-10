@@ -1,59 +1,67 @@
-import AppError from '../../../shared/errors/AppError';
+import { AppError, NotFoundError } from '../../../shared/errors/appError';
 
 import {
-  applyTotalGoalUpdate,
-  createTotalGoal,
+  createTotalGoalEntity,
+  createTotalGoalUpdate,
   type CreateTotalGoalPayload,
   type UpdateTotalGoalPayload
 } from '../domain/totalGoalEntity';
 import * as totalGoalRepository from '../infrastructure/totalGoalRepository';
 
-export async function registerTotalGoal(payload: CreateTotalGoalPayload) {
-  const existing = await totalGoalRepository.findByUserId(payload.userId);
+const totalGoalAlreadyExists = () =>
+  new AppError(409, 'TOTAL_GOAL_ALREADY_EXISTS', 'Total goal already exists for this user');
+
+const totalGoalNotFound = () => new NotFoundError('Total goal was not found', 'TOTAL_GOAL_NOT_FOUND');
+
+// POST /api/total-goals
+export async function createTotalGoal(userId: string, payload: CreateTotalGoalPayload) {
+  const existing = await totalGoalRepository.findByUserId(userId);
 
   if (existing) {
-    throw new AppError('이미 전체 목표가 설정되어 있습니다.', 409, 'TOTAL_GOAL_ALREADY_EXISTS');
+    throw totalGoalAlreadyExists();
   }
 
-  const newTotalGoal = createTotalGoal(payload);
+  const totalGoal = createTotalGoalEntity(userId, payload);
 
-  return totalGoalRepository.save(newTotalGoal);
+  try {
+    return await totalGoalRepository.save(totalGoal);
+  } catch (error) {
+    if (totalGoalRepository.isPrismaKnownError(error, totalGoalRepository.UNIQUE_CONSTRAINT_ERROR)) {
+      throw totalGoalAlreadyExists();
+    }
+
+    throw error;
+  }
 }
 
-export async function getTotalGoalByUserId(userId: string) {
-  if (!userId) {
-    throw new AppError('userId는 필수입니다.', 400, 'INVALID_USER_ID');
-  }
-
+// GET /api/total-goals
+export async function getTotalGoal(userId: string) {
   const totalGoal = await totalGoalRepository.findByUserId(userId);
 
   if (!totalGoal) {
-    throw new AppError('해당 유저의 전체 목표를 찾을 수 없습니다.', 404, 'TOTAL_GOAL_NOT_FOUND');
+    throw totalGoalNotFound();
   }
 
   return totalGoal;
 }
 
-export async function getTotalGoalById(id: string) {
-  const totalGoal = await totalGoalRepository.findById(id);
+// PATCH /api/total-goals
+export async function updateTotalGoal(userId: string, payload: UpdateTotalGoalPayload) {
+  const existing = await totalGoalRepository.findByUserId(userId);
 
-  if (!totalGoal) {
-    throw new AppError('해당 전체 목표를 찾을 수 없습니다.', 404, 'TOTAL_GOAL_NOT_FOUND');
+  if (!existing) {
+    throw totalGoalNotFound();
   }
 
-  return totalGoal;
-}
+  const update = createTotalGoalUpdate(payload);
 
-export async function updateTotalGoal(id: string, payload: UpdateTotalGoalPayload) {
-  await getTotalGoalById(id);
+  try {
+    return await totalGoalRepository.updateByUserId(userId, update);
+  } catch (error) {
+    if (totalGoalRepository.isPrismaKnownError(error, totalGoalRepository.RECORD_NOT_FOUND_ERROR)) {
+      throw totalGoalNotFound();
+    }
 
-  const validatedPayload = applyTotalGoalUpdate(payload);
-
-  return totalGoalRepository.update(id, validatedPayload);
-}
-
-export async function deleteTotalGoal(id: string) {
-  await getTotalGoalById(id);
-
-  await totalGoalRepository.deleteById(id);
+    throw error;
+  }
 }

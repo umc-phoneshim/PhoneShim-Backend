@@ -1,55 +1,42 @@
+import { UnauthorizedError } from '../../../shared/errors/appError';
+import { sendCreated, sendSuccess } from '../../../shared/responses/apiResponse';
 import asyncHandler from '../../../shared/utils/asyncHandler';
 
 import * as totalGoalService from '../application/totalGoalService';
-import type { CreateTotalGoalRequestBody, UpdateTotalGoalRequestBody } from './totalGoalDto';
+import type { CreateTotalGoalRequest, UpdateTotalGoalRequest } from './totalGoalDto';
+
+const getAuthenticatedUserId = (user?: Express.Request['user']): string => {
+  if (!user?.userId) {
+    throw new UnauthorizedError('Authentication required');
+  }
+
+  return user.userId;
+};
 
 export const createTotalGoal = asyncHandler(async (req, res) => {
-  const body = req.body as CreateTotalGoalRequestBody;
+  const userId = getAuthenticatedUserId(req.user);
+  const body = req.body as CreateTotalGoalRequest;
 
-  const totalGoal = await totalGoalService.registerTotalGoal({ ...body, userId: req.userId! });
-
-  res.status(201).json({
-    success: true,
-    data: totalGoal
+  const result = await totalGoalService.createTotalGoal(userId, {
+    targetMinutes: body.targetMinutes,
+    restrictAfter: body.restrictAfter
   });
+
+  sendCreated(res, result);
 });
 
 export const getTotalGoal = asyncHandler(async (req, res) => {
-  const totalGoal = await totalGoalService.getTotalGoalByUserId(req.userId!);
+  const userId = getAuthenticatedUserId(req.user);
 
-  res.json({
-    success: true,
-    data: totalGoal
-  });
-});
+  const result = await totalGoalService.getTotalGoal(userId);
 
-export const getTotalGoalById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  const totalGoal = await totalGoalService.getTotalGoalById(id);
-
-  res.json({
-    success: true,
-    data: totalGoal
-  });
+  sendSuccess(res, result);
 });
 
 export const updateTotalGoal = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const body = req.body as UpdateTotalGoalRequestBody;
+  const userId = getAuthenticatedUserId(req.user);
 
-  const totalGoal = await totalGoalService.updateTotalGoal(id, body);
+  const result = await totalGoalService.updateTotalGoal(userId, req.body as UpdateTotalGoalRequest);
 
-  res.json({
-    success: true,
-    data: totalGoal
-  });
-});
-
-export const deleteTotalGoal = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  await totalGoalService.deleteTotalGoal(id);
-
-  res.status(204).send();
+  sendSuccess(res, result);
 });

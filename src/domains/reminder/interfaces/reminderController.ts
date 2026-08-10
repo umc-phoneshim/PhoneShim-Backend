@@ -1,55 +1,57 @@
+import { UnauthorizedError } from '../../../shared/errors/appError';
+import { sendCreated, sendSuccess } from '../../../shared/responses/apiResponse';
 import asyncHandler from '../../../shared/utils/asyncHandler';
-
 import * as reminderService from '../application/reminderService';
-import type { CreateReminderRequestBody, UpdateReminderRequestBody } from './reminderDto';
+import type { CreateReminderRequest, UpdateReminderRequest } from './reminderDto';
+
+const getAuthenticatedUserId = (user?: Express.Request['user']): string => {
+  if (!user?.userId) {
+    throw new UnauthorizedError('Authentication required');
+  }
+
+  return user.userId;
+};
 
 export const createReminder = asyncHandler(async (req, res) => {
-  const body = req.body as CreateReminderRequestBody;
-
-  const reminder = await reminderService.registerReminder({ ...body, userId: req.userId! });
-
-  res.status(201).json({
-    success: true,
-    data: reminder
+  const userId = getAuthenticatedUserId(req.user);
+  const result = await reminderService.createReminder({
+    ...(req.body as CreateReminderRequest),
+    userId
   });
+
+  sendCreated(res, result);
 });
 
 export const getReminders = asyncHandler(async (req, res) => {
-  const reminders = await reminderService.getReminders(req.userId!);
+  const userId = getAuthenticatedUserId(req.user);
+  const date = typeof req.query.date === 'string' ? req.query.date : undefined;
+  const result = await reminderService.getReminders(userId, date);
 
-  res.json({
-    success: true,
-    data: reminders
-  });
+  sendSuccess(res, result);
 });
 
 export const getReminderById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const userId = getAuthenticatedUserId(req.user);
+  const result = await reminderService.getReminderById(req.params.id, userId);
 
-  const reminder = await reminderService.getReminderById(id);
-
-  res.json({
-    success: true,
-    data: reminder
-  });
+  sendSuccess(res, result);
 });
 
 export const updateReminder = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const body = req.body as UpdateReminderRequestBody;
+  const userId = getAuthenticatedUserId(req.user);
+  const result = await reminderService.updateReminder(
+    req.params.id,
+    userId,
+    req.body as UpdateReminderRequest
+  );
 
-  const reminder = await reminderService.updateReminder(id, body);
-
-  res.json({
-    success: true,
-    data: reminder
-  });
+  sendSuccess(res, result);
 });
 
 export const deleteReminder = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const userId = getAuthenticatedUserId(req.user);
 
-  await reminderService.deleteReminder(id);
+  await reminderService.deleteReminder(req.params.id, userId);
 
   res.status(204).send();
 });

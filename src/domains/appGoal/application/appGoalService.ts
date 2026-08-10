@@ -1,59 +1,126 @@
-import AppError from '../../../shared/errors/AppError';
+import { AppError, BadRequestError, NotFoundError } from '../../../shared/errors/appError';
 
+import * as monitoredAppRepository from '../../monitoredApp/infrastructure/monitoredAppRepository';
 import {
-  applyAppGoalUpdate,
-  createAppGoal,
+  createAppGoalEntity,
+  createAppGoalUpdate,
+  type AppGoal,
   type CreateAppGoalPayload,
   type UpdateAppGoalPayload
 } from '../domain/appGoalEntity';
 import * as appGoalRepository from '../infrastructure/appGoalRepository';
 
-export async function registerAppGoal(payload: CreateAppGoalPayload) {
+const appGoalAlreadyExists = () =>
+  new AppError(409, 'APP_GOAL_ALREADY_EXISTS', 'App goal already exists for this monitored app');
+
+const appGoalNotFound = () => new NotFoundError('App goal was not found', 'APP_GOAL_NOT_FOUND');
+
+const monitoredAppNotFound = () =>
+  new NotFoundError('Monitored app was not found', 'MONITORED_APP_NOT_FOUND');
+
+async function ensureMonitoredAppOwnership(monitoredAppId: string, userId: string) {
+  const monitoredApp = await monitoredAppRepository.findByIdAndUserId(monitoredAppId, userId);
+
+  if (!monitoredApp) {
+    throw monitoredAppNotFound();
+  }
+
+  return monitoredApp;
+}
+
+// AppGoal에는 userId 컬럼이 없어서(1:1로 monitoredApp에 종속), 자기 소유가 맞는지는
+// 항상 monitoredApp을 거쳐서 확인합니다. 본인 소유가 아니거나 없는 리소스는
+// API_SPEC.md 공통 규칙대로 전부 404로 응답합니다.
+async function getOwnedAppGoalById(id: string, userId: string): Promise<AppGoal> {
+  const appGoal = await appGoalRepository.findById(id);
+
+  if (!appGoal) {
+    throw appGoalNotFound();
+  }
+
+  const monitoredApp = await monitoredAppRepository.findByIdAndUserId(
+    appGoal.monitoredAppId,
+    userId
+  );
+
+  if (!monitoredApp) {
+    throw appGoalNotFound();
+  }
+
+  return appGoal;
+}
+
+export async function createAppGoal(userId: string, payload: CreateAppGoalPayload) {
+  if (!payload.monitoredAppId.trim()) {
+    throw new BadRequestError('monitoredAppId is required', 'VALIDATION_ERROR');
+  }
+
+  await ensureMonitoredAppOwnership(payload.monitoredAppId, userId);
+
   const existing = await appGoalRepository.findByMonitoredAppId(payload.monitoredAppId);
 
   if (existing) {
-    throw new AppError('이미 해당 앱의 목표가 설정되어 있습니다.', 409, 'APP_GOAL_ALREADY_EXISTS');
+    throw appGoalAlreadyExists();
   }
 
-  const newAppGoal = createAppGoal(payload);
+  const appGoal = createAppGoalEntity(payload);
 
-  return appGoalRepository.save(newAppGoal);
+  try {
+    return await appGoalRepository.save(appGoal);
+  } catch (error) {
+    if (appGoalRepository.isPrismaKnownError(error, appGoalRepository.UNIQUE_CONSTRAINT_ERROR)) {
+      throw appGoalAlreadyExists();
+    }
+
+    throw error;
+  }
 }
 
-export async function getAppGoalByMonitoredAppId(monitoredAppId: string) {
-  if (!monitoredAppId) {
-    throw new AppError('monitoredAppId는 필수입니다.', 400, 'INVALID_MONITORED_APP_ID');
+// GET /api/app-goals?monitoredAppId=
+export async function getAppGoalByMonitoredAppId(userId: string, monitoredAppId: string) {
+  if (!monitoredAppId.trim()) {
+    throw new BadRequestError('monitoredAppId is required', 'VALIDATION_ERROR');
   }
+
+  await ensureMonitoredAppOwnership(monitoredAppId, userId);
 
   const appGoal = await appGoalRepository.findByMonitoredAppId(monitoredAppId);
 
   if (!appGoal) {
-    throw new AppError('해당 앱의 목표를 찾을 수 없습니다.', 404, 'APP_GOAL_NOT_FOUND');
+    throw appGoalNotFound();
   }
 
   return appGoal;
 }
 
-export async function getAppGoalById(id: string) {
-  const appGoal = await appGoalRepository.findById(id);
+// PATCH /api/app-goals/:id
+export async function updateAppGoal(id: string, userId: string, payload: UpdateAppGoalPayload) {
+  await getOwnedAppGoalById(id, userId);
 
-  if (!appGoal) {
-    throw new AppError('해당 앱 목표를 찾을 수 없습니다.', 404, 'APP_GOAL_NOT_FOUND');
+  const update = createAppGoalUpdate(payload);
+
+  try {
+    return await appGoalRepository.updateById(id, update);
+  } catch (error) {
+    if (appGoalRepository.isPrismaKnownError(error, appGoalRepository.RECORD_NOT_FOUND_ERROR)) {
+      throw appGoalNotFound();
+    }
+
+    throw error;
   }
-
-  return appGoal;
 }
 
-export async function updateAppGoal(id: string, payload: UpdateAppGoalPayload) {
-  await getAppGoalById(id);
+// DELETE /api/app-goals/:id — API_SPEC.md엔 아직 없는 확장 기능입니다 (docs 업데이트 필요).
+export async function deleteAppGoal(id: string, userId: string) {
+  await getOwnedAppGoalById(id, userId);
 
-  const validatedPayload = applyAppGoalUpdate(payload);
+  try {
+    await appGoalRepository.deleteById(id);
+  } catch (error) {
+    if (appGoalRepository.isPrismaKnownError(error, appGoalRepository.RECORD_NOT_FOUND_ERROR)) {
+      throw appGoalNotFound();
+    }
 
-  return appGoalRepository.update(id, validatedPayload);
-}
-
-export async function deleteAppGoal(id: string) {
-  await getAppGoalById(id);
-
-  await appGoalRepository.deleteById(id);
+    throw error;
+  }
 }

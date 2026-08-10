@@ -1,7 +1,10 @@
-export type CreateAlertSettingRequestBody = {
-  alertTime?: string;
+export type UpdateAlertSettingRequest = {
+  alertTimeMinutes: number;
 };
 
-export type UpdateAlertSettingRequestBody = {
-  alertTime?: string;
-};
+export const updateAlertSettingRequestSchema = {
+  alertTimeMinutes: {
+    type: 'number',
+    required: true
+  }
+} as const;

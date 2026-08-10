@@ -1,37 +1,95 @@
-import prisma from '../../../shared/database/prismaClient';
+import { Prisma } from '@prisma/client';
 
+import prisma from '../../../shared/database/prismaClient';
+import {
+  isPrismaKnownError,
+  PRISMA_RECORD_NOT_FOUND_ERROR
+} from '../../../shared/errors/prismaError';
 import type { NewReminder, Reminder, ValidatedReminderUpdate } from '../domain/reminderEntity';
 
-type ReminderWithRestrictedApps = {
-  id: string;
-  userId: string;
-  date: Date;
-  title: string;
-  startTime: Date;
-  endTime: Date;
-  restrictMode: Reminder['restrictMode'];
-  createdAt: Date;
-  updatedAt: Date;
-  reminderRestrictedApps: { monitoredAppId: string }[];
-};
+export const RECORD_NOT_FOUND_ERROR = PRISMA_RECORD_NOT_FOUND_ERROR;
+export { isPrismaKnownError };
 
-function toEntity(reminder: ReminderWithRestrictedApps): Reminder {
-  const { reminderRestrictedApps, ...rest } = reminder;
+type PrismaReminder = Prisma.ReminderGetPayload<{
+  include: {
+    reminderRestrictedApps: true;
+  };
+}>;
+
+function toEntity(reminder: PrismaReminder): Reminder {
+  const { reminderRestrictedApps, ...reminderFields } = reminder;
 
   return {
-    ...rest,
-    restrictedAppIds: reminderRestrictedApps.map((entry) => entry.monitoredAppId)
+    ...reminderFields,
+    restrictedAppIds: reminderRestrictedApps.map((app) => app.monitoredAppId)
   };
 }
 
-export async function save(reminder: NewReminder) {
-  const { restrictedAppIds, ...reminderData } = reminder;
+export async function countOwnedMonitoredApps(userId: string, appIds: string[]) {
+  if (appIds.length === 0) {
+    return 0;
+  }
 
+  return prisma.monitoredApp.count({
+    where: {
+      userId,
+      id: {
+        in: appIds
+      }
+    }
+  });
+}
+
+export async function findAllByUserIdAndDate(userId: string, date: Date) {
+  const reminders = await prisma.reminder.findMany({
+    where: { userId, date },
+    include: { reminderRestrictedApps: true },
+    orderBy: [{ startTime: 'asc' }, { endTime: 'asc' }, { createdAt: 'asc' }]
+  });
+
+  return reminders.map(toEntity);
+}
+
+export async function findByIdAndUserId(id: string, userId: string) {
+  const reminder = await prisma.reminder.findFirst({
+    where: { id, userId },
+    include: { reminderRestrictedApps: true }
+  });
+
+  return reminder ? toEntity(reminder) : null;
+}
+
+export async function existsOverlappingReminder(
+  userId: string,
+  date: Date,
+  startTime: Date,
+  endTime: Date,
+  exceptId?: string
+) {
+  const count = await prisma.reminder.count({
+    where: {
+      userId,
+      date,
+      ...(exceptId ? { id: { not: exceptId } } : {}),
+      startTime: { lt: endTime },
+      endTime: { gt: startTime }
+    }
+  });
+
+  return count > 0;
+}
+
+export async function save(reminder: NewReminder) {
   const created = await prisma.reminder.create({
     data: {
-      ...reminderData,
+      userId: reminder.userId,
+      date: reminder.date,
+      title: reminder.title,
+      startTime: reminder.startTime,
+      endTime: reminder.endTime,
+      restrictMode: reminder.restrictMode,
       reminderRestrictedApps: {
-        create: restrictedAppIds.map((monitoredAppId) => ({ monitoredAppId }))
+        create: reminder.restrictedAppIds.map((monitoredAppId) => ({ monitoredAppId }))
       }
     },
     include: { reminderRestrictedApps: true }
@@ -40,52 +98,30 @@ export async function save(reminder: NewReminder) {
   return toEntity(created);
 }
 
-export async function findAllByUserId(userId: string) {
-  const reminders = await prisma.reminder.findMany({
-    where: { userId },
-    include: { reminderRestrictedApps: true },
-    orderBy: [{ date: 'asc' }, { startTime: 'asc' }]
-  });
+export async function update(id: string, userId: string, payload: ValidatedReminderUpdate) {
+  const { restrictedAppIds, ...reminderFields } = payload;
 
-  return reminders.map(toEntity);
-}
-
-export async function findById(id: string) {
-  const reminder = await prisma.reminder.findUnique({
-    where: { id },
-    include: { reminderRestrictedApps: true }
-  });
-
-  return reminder ? toEntity(reminder) : null;
-}
-
-export async function update(id: string, payload: ValidatedReminderUpdate) {
-  const { restrictedAppIds, ...reminderData } = payload;
-
-  const updated = await prisma.$transaction(async (tx) => {
-    if (restrictedAppIds !== undefined) {
-      await tx.reminderRestrictedApp.deleteMany({ where: { reminderId: id } });
-    }
-
-    return tx.reminder.update({
-      where: { id },
-      data: {
-        ...reminderData,
-        ...(restrictedAppIds !== undefined && {
-          reminderRestrictedApps: {
-            create: restrictedAppIds.map((monitoredAppId) => ({ monitoredAppId }))
+  const updated = await prisma.reminder.update({
+    where: { id, userId },
+    data: {
+      ...reminderFields,
+      ...(restrictedAppIds !== undefined
+        ? {
+            reminderRestrictedApps: {
+              deleteMany: {},
+              create: restrictedAppIds.map((monitoredAppId) => ({ monitoredAppId }))
+            }
           }
-        })
-      },
-      include: { reminderRestrictedApps: true }
-    });
+        : {})
+    },
+    include: { reminderRestrictedApps: true }
   });
 
   return toEntity(updated);
 }
 
-export async function deleteById(id: string) {
+export async function deleteByIdAndUserId(id: string, userId: string) {
   await prisma.reminder.delete({
-    where: { id }
+    where: { id, userId }
   });
 }

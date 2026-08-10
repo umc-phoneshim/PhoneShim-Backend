@@ -1,6 +1,6 @@
 import { RestrictMode } from '@prisma/client';
 
-import AppError from '../../../shared/errors/AppError';
+import { BadRequestError } from '../../../shared/errors/appError';
 
 export type Reminder = {
   id: string;
@@ -17,20 +17,20 @@ export type Reminder = {
 
 export type CreateReminderPayload = {
   userId: string;
-  date: string | Date;
+  date: string;
   title: string;
-  startTime: string | Date;
-  endTime: string | Date;
-  restrictMode?: RestrictMode;
+  startTime: string;
+  endTime: string;
+  restrictMode?: string;
   restrictedAppIds?: string[];
 };
 
 export type UpdateReminderPayload = {
-  date?: string | Date;
+  date?: string;
   title?: string;
-  startTime?: string | Date;
-  endTime?: string | Date;
-  restrictMode?: RestrictMode;
+  startTime?: string;
+  endTime?: string;
+  restrictMode?: string;
   restrictedAppIds?: string[];
 };
 
@@ -53,111 +53,173 @@ export type ValidatedReminderUpdate = {
   restrictedAppIds?: string[];
 };
 
-function toDate(value: string | Date, fieldName: string, code: string): Date {
-  const date = value instanceof Date ? value : new Date(value);
+const VALID_RESTRICT_MODES = new Set<string>(Object.values(RestrictMode));
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const ISO_DATE_TIME_PATTERN =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z|[+-]\d{2}:\d{2})$/;
+const MIN_REMINDER_DURATION_MS = 60 * 1000;
+const MAX_TITLE_LENGTH = 20;
+const KST_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+});
 
-  if (Number.isNaN(date.getTime())) {
-    throw new AppError(`${fieldName}은 올바른 날짜/시간 형식이어야 합니다.`, 400, code);
+const normalizeRequiredString = (value: string, fieldName: string): string => {
+  const normalized = value.trim();
+
+  if (!normalized) {
+    throw new BadRequestError(`${fieldName} is required`, 'VALIDATION_ERROR');
+  }
+
+  return normalized;
+};
+
+const normalizeReminderTitle = (value: string): string => {
+  if (value.length > MAX_TITLE_LENGTH) {
+    throw new BadRequestError(
+      'title must be 20 characters or fewer',
+      'VALIDATION_ERROR'
+    );
+  }
+
+  return normalizeRequiredString(value, 'title');
+};
+
+export const parseDateOnly = (value: string): Date => {
+  if (!DATE_PATTERN.test(value)) {
+    throw new BadRequestError('date must be YYYY-MM-DD', 'VALIDATION_ERROR');
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    throw new BadRequestError('date must be a valid calendar date', 'VALIDATION_ERROR');
   }
 
   return date;
-}
+};
 
-function validateRestrictMode(restrictMode: RestrictMode, restrictedAppIds: string[]) {
-  if (!Object.values(RestrictMode).includes(restrictMode)) {
-    throw new AppError('restrictMode 값이 올바르지 않습니다.', 400, 'INVALID_RESTRICT_MODE');
+export const toKstDateString = (date: Date): string => {
+  return KST_DATE_FORMATTER.format(date);
+};
+
+const parseIsoDateTime = (value: string, fieldName: string): Date => {
+  if (!ISO_DATE_TIME_PATTERN.test(value)) {
+    throw new BadRequestError(`${fieldName} must be an ISO datetime with timezone`, 'VALIDATION_ERROR');
   }
 
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestError(`${fieldName} must be a valid ISO string`, 'VALIDATION_ERROR');
+  }
+
+  return date;
+};
+
+const normalizeRestrictMode = (value: string | undefined): RestrictMode => {
+  if (value === undefined) {
+    return RestrictMode.NONE;
+  }
+
+  if (!VALID_RESTRICT_MODES.has(value)) {
+    throw new BadRequestError('Invalid restrictMode', 'INVALID_RESTRICT_MODE');
+  }
+
+  return value as RestrictMode;
+};
+
+const normalizeRestrictedAppIds = (value: string[] | undefined): string[] => {
+  if (value === undefined) {
+    return [];
+  }
+
+  if (!Array.isArray(value) || value.some((appId) => typeof appId !== 'string' || !appId.trim())) {
+    throw new BadRequestError('Invalid restrictedAppIds', 'INVALID_RESTRICTED_APP_IDS');
+  }
+
+  return [...new Set(value.map((appId) => appId.trim()))];
+};
+
+export const ensureValidTimeRange = (startTime: Date, endTime: Date) => {
+  if (endTime.getTime() - startTime.getTime() < MIN_REMINDER_DURATION_MS) {
+    throw new BadRequestError('Invalid reminder time range', 'INVALID_TIME_RANGE');
+  }
+};
+
+export const ensureTimesMatchDate = (date: Date, startTime: Date, endTime: Date) => {
+  const expectedDate = date.toISOString().slice(0, 10);
+  const startDate = toKstDateString(startTime);
+  const endDate = toKstDateString(endTime);
+
+  if (startDate !== expectedDate || endDate !== expectedDate) {
+    throw new BadRequestError('startTime and endTime must match date', 'INVALID_TIME_RANGE');
+  }
+};
+
+export const ensureRestrictedAppsMatchMode = (
+  restrictMode: RestrictMode,
+  restrictedAppIds: string[]
+) => {
   if (restrictMode === RestrictMode.SPECIFIC_APP && restrictedAppIds.length === 0) {
-    throw new AppError(
-      'restrictMode가 SPECIFIC_APP인 경우 restrictedAppIds는 최소 1개 이상이어야 합니다.',
-      400,
-      'INVALID_RESTRICTED_APP_IDS'
-    );
+    throw new BadRequestError('SPECIFIC_APP requires restrictedAppIds', 'INVALID_RESTRICTED_APP_IDS');
   }
-}
+};
 
-export function createReminder(payload: CreateReminderPayload): NewReminder {
-  if (!payload.userId) {
-    throw new AppError('userId는 필수입니다.', 400, 'INVALID_USER_ID');
-  }
+export function createReminderEntity(payload: CreateReminderPayload): NewReminder {
+  const date = parseDateOnly(payload.date);
+  const startTime = parseIsoDateTime(payload.startTime, 'startTime');
+  const endTime = parseIsoDateTime(payload.endTime, 'endTime');
+  const restrictMode = normalizeRestrictMode(payload.restrictMode);
+  const restrictedAppIds = normalizeRestrictedAppIds(payload.restrictedAppIds);
 
-  if (!payload.title || payload.title.trim().length === 0) {
-    throw new AppError('title은 필수입니다.', 400, 'INVALID_TITLE');
-  }
-
-  const date = toDate(payload.date, 'date', 'INVALID_DATE');
-  const startTime = toDate(payload.startTime, 'startTime', 'INVALID_START_TIME');
-  const endTime = toDate(payload.endTime, 'endTime', 'INVALID_END_TIME');
-
-  if (startTime.getTime() >= endTime.getTime()) {
-    throw new AppError('startTime은 endTime보다 이전이어야 합니다.', 400, 'INVALID_TIME_RANGE');
-  }
-
-  const restrictMode = payload.restrictMode ?? RestrictMode.NONE;
-  const restrictedAppIds =
-    payload.restrictMode === RestrictMode.SPECIFIC_APP ? (payload.restrictedAppIds ?? []) : [];
-
-  validateRestrictMode(restrictMode, restrictedAppIds);
+  ensureValidTimeRange(startTime, endTime);
+  ensureTimesMatchDate(date, startTime, endTime);
+  ensureRestrictedAppsMatchMode(restrictMode, restrictedAppIds);
 
   return {
-    userId: payload.userId,
+    userId: normalizeRequiredString(payload.userId, 'userId'),
     date,
-    title: payload.title.trim(),
+    title: normalizeReminderTitle(payload.title),
     startTime,
     endTime,
     restrictMode,
-    restrictedAppIds
+    restrictedAppIds: restrictMode === RestrictMode.SPECIFIC_APP ? restrictedAppIds : []
   };
 }
 
-export function applyReminderUpdate(
-  payload: UpdateReminderPayload,
-  current: Reminder
-): ValidatedReminderUpdate {
-  if (payload.title !== undefined && payload.title.trim().length === 0) {
-    throw new AppError('title은 빈 값일 수 없습니다.', 400, 'INVALID_TITLE');
+export function createReminderUpdate(payload: UpdateReminderPayload): ValidatedReminderUpdate {
+  const update: ValidatedReminderUpdate = {};
+
+  if (payload.date !== undefined) {
+    update.date = parseDateOnly(payload.date);
   }
 
-  const date =
-    payload.date !== undefined ? toDate(payload.date, 'date', 'INVALID_DATE') : undefined;
-  const startTime =
-    payload.startTime !== undefined
-      ? toDate(payload.startTime, 'startTime', 'INVALID_START_TIME')
-      : undefined;
-  const endTime =
-    payload.endTime !== undefined
-      ? toDate(payload.endTime, 'endTime', 'INVALID_END_TIME')
-      : undefined;
-
-  const nextStartTime = startTime ?? current.startTime;
-  const nextEndTime = endTime ?? current.endTime;
-
-  if (nextStartTime.getTime() >= nextEndTime.getTime()) {
-    throw new AppError('startTime은 endTime보다 이전이어야 합니다.', 400, 'INVALID_TIME_RANGE');
+  if (payload.title !== undefined) {
+    update.title = normalizeReminderTitle(payload.title);
   }
 
-  const restrictMode = payload.restrictMode ?? current.restrictMode;
-
-  if (payload.restrictMode !== undefined || payload.restrictedAppIds !== undefined) {
-    const restrictedAppIds =
-      restrictMode === RestrictMode.SPECIFIC_APP ? (payload.restrictedAppIds ?? []) : [];
-    validateRestrictMode(restrictMode, restrictedAppIds);
-
-    return {
-      ...(date !== undefined && { date }),
-      ...(payload.title !== undefined && { title: payload.title.trim() }),
-      ...(startTime !== undefined && { startTime }),
-      ...(endTime !== undefined && { endTime }),
-      restrictMode,
-      restrictedAppIds
-    };
+  if (payload.startTime !== undefined) {
+    update.startTime = parseIsoDateTime(payload.startTime, 'startTime');
   }
 
-  return {
-    ...(date !== undefined && { date }),
-    ...(payload.title !== undefined && { title: payload.title.trim() }),
-    ...(startTime !== undefined && { startTime }),
-    ...(endTime !== undefined && { endTime })
-  };
+  if (payload.endTime !== undefined) {
+    update.endTime = parseIsoDateTime(payload.endTime, 'endTime');
+  }
+
+  if (payload.restrictMode !== undefined) {
+    update.restrictMode = normalizeRestrictMode(payload.restrictMode);
+  }
+
+  if (payload.restrictedAppIds !== undefined) {
+    update.restrictedAppIds = normalizeRestrictedAppIds(payload.restrictedAppIds);
+  }
+
+  if (Object.keys(update).length === 0) {
+    throw new BadRequestError('At least one field is required', 'VALIDATION_ERROR');
+  }
+
+  return update;
 }

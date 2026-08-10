@@ -6,3 +6,247 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum SocialProvider {
+  GOOGLE
+  KAKAO
+}
+
+enum UserStatus {
+  ACTIVE
+  WITHDRAWAL_PENDING
+  DELETED
+}
+
+enum RestrictMode {
+  NONE
+  FULL_PHONE
+  SPECIFIC_APP
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum AgeGroup {
+  TEENS
+  TWENTIES
+  THIRTIES
+  FORTIES
+  FIFTIES_PLUS
+}
+
+// 사용 이유 팝업의 고정 객관식 선택지 (Figma REP-01: 여가/이동/습관/정보/기타)
+enum UsageReasonCode {
+  LEISURE
+  COMMUTE
+  HABIT
+  INFO
+  OTHER
+}
+
+model User {
+  id                    String     @id @default(uuid()) @db.Uuid
+  email                 String     @unique
+  name                  String
+  profileImage          String?    @map("profile_image")
+  gender                Gender?
+  ageGroup              AgeGroup?  @map("age_group")
+  motivation            String?    @db.VarChar(100)
+  status                UserStatus @default(ACTIVE)
+  withdrawalRequestedAt DateTime?  @map("withdrawal_requested_at")
+  deletedAt             DateTime?  @map("deleted_at")
+  createdAt             DateTime   @default(now()) @map("created_at")
+  updatedAt             DateTime   @updatedAt @map("updated_at")
+
+  socialAccounts    SocialAccount[]
+  totalGoal         TotalGoal?
+  alertSetting      AlertSetting?
+  monitoredApps     MonitoredApp[]
+  reminders         Reminder[]
+  usageLogs         UsageLog[]
+  usageReasons      UsageReason[]
+  usageSessions     UsageSession[]
+  dailyDeviceUsages DailyDeviceUsage[]
+
+  @@map("users")
+}
+
+model SocialAccount {
+  id             String         @id @default(uuid()) @db.Uuid
+  userId         String         @map("user_id") @db.Uuid
+  provider       SocialProvider
+  providerUserId String         @map("provider_user_id")
+  email          String
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("social_accounts")
+}
+
+model TotalGoal {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @unique @map("user_id") @db.Uuid
+  targetMinutes Int      @map("target_minutes")
+  restrictAfter Boolean  @default(false) @map("restrict_after")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("total_goals")
+}
+
+model MonitoredApp {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  packageName String   @map("package_name")
+  appName     String   @map("app_name")
+  appIcon     String?  @map("app_icon")
+  sortOrder   Int      @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appGoal                AppGoal?
+  usageLogs              UsageLog[]
+  usageReasons           UsageReason[]
+  usageSessions          UsageSession[]
+  reminderRestrictedApps ReminderRestrictedApp[]
+
+  @@unique([userId, packageName])
+  @@index([userId, sortOrder])
+  @@map("monitored_apps")
+}
+
+model AppGoal {
+  id             String   @id @default(uuid()) @db.Uuid
+  monitoredAppId String   @unique @map("monitored_app_id") @db.Uuid
+  targetMinutes  Int      @map("target_minutes")
+  targetCount    Int      @map("target_count")
+  restrictAfter  Boolean  @default(false) @map("restrict_after")
+  goalReason     String?  @map("goal_reason") @db.VarChar(100)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  monitoredApp MonitoredApp @relation(fields: [monitoredAppId], references: [id], onDelete: Cascade)
+
+  @@map("app_goals")
+}
+
+model UsageLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  monitoredAppId String   @map("monitored_app_id") @db.Uuid
+  date           DateTime @db.Date
+  usedMinutes    Int      @map("used_minutes")
+  entryCount     Int      @map("entry_count")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monitoredApp MonitoredApp  @relation(fields: [monitoredAppId], references: [id], onDelete: Cascade)
+  usageReasons UsageReason[]
+
+  @@unique([userId, monitoredAppId, date])
+  @@index([userId, date])
+  @@map("usage_logs")
+}
+
+model UsageReason {
+  id             String          @id @default(uuid()) @db.Uuid
+  userId         String          @map("user_id") @db.Uuid
+  monitoredAppId String          @map("monitored_app_id") @db.Uuid
+  usageLogId     String?         @map("usage_log_id") @db.Uuid
+  date           DateTime        @db.Date
+  timeRangeStart DateTime        @map("time_range_start")
+  timeRangeEnd   DateTime        @map("time_range_end")
+  reason         UsageReasonCode
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monitoredApp MonitoredApp @relation(fields: [monitoredAppId], references: [id], onDelete: Cascade)
+  usageLog     UsageLog?    @relation(fields: [usageLogId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+  @@map("usage_reasons")
+}
+
+model UsageSession {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  monitoredAppId String   @map("monitored_app_id") @db.Uuid
+  date           DateTime @db.Date
+  startTime      DateTime @map("start_time")
+  endTime        DateTime @map("end_time")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monitoredApp MonitoredApp @relation(fields: [monitoredAppId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("usage_sessions")
+}
+
+model Reminder {
+  id           String       @id @default(uuid()) @db.Uuid
+  userId       String       @map("user_id") @db.Uuid
+  date         DateTime     @db.Date
+  title        String
+  startTime    DateTime     @map("start_time")
+  endTime      DateTime     @map("end_time")
+  restrictMode RestrictMode @default(NONE) @map("restrict_mode")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reminderRestrictedApps ReminderRestrictedApp[]
+
+  @@index([userId, date, startTime])
+  @@map("reminders")
+}
+
+model ReminderRestrictedApp {
+  reminderId     String @map("reminder_id") @db.Uuid
+  monitoredAppId String @map("monitored_app_id") @db.Uuid
+
+  reminder     Reminder     @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  monitoredApp MonitoredApp @relation(fields: [monitoredAppId], references: [id], onDelete: Cascade)
+
+  @@id([reminderId, monitoredAppId])
+  @@map("reminder_restricted_apps")
+}
+
+model AlertSetting {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @unique @map("user_id") @db.Uuid
+  enabled          Boolean  @default(true)
+  alertTimeMinutes Int      @default(1320) @map("alert_time_minutes")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("alert_settings")
+}
+
+model DailyDeviceUsage {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  date             DateTime @db.Date
+  totalUsedMinutes Int      @map("total_used_minutes")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("daily_device_usage")
+}

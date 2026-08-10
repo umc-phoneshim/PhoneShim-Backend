@@ -1,17 +1,45 @@
-import type { NextFunction, Request, Response } from 'express';
+import { type NextFunction, type Request, type Response } from 'express';
 
-import AppError from '../errors/AppError';
+import { verifyAccessToken } from '../auth/jwt';
 
-// JWT 인증 도입 전까지 x-user-id 헤더를 이용한 임시 인증.
-// 추후 JWT 인증으로 교체 예정.
-export default function authMiddleware(req: Request, _res: Response, next: NextFunction) {
-  const userId = req.header('x-user-id');
-
-  if (!userId) {
-    throw new AppError('인증 정보가 없습니다. x-user-id 헤더가 필요합니다.', 401, 'UNAUTHORIZED');
+const extractBearerToken = (authorization?: string): string | null => {
+  if (!authorization) {
+    return null;
   }
 
-  req.userId = userId;
+  const [scheme, token] = authorization.split(' ');
 
-  next();
-}
+  if (scheme !== 'Bearer' || !token) {
+    return null;
+  }
+
+  return token;
+};
+
+export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
+  const token = extractBearerToken(req.headers.authorization);
+
+  if (!token) {
+    res.status(401).json({
+      success: false,
+      error: {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required'
+      }
+    });
+    return;
+  }
+
+  try {
+    req.user = verifyAccessToken(token);
+    next();
+  } catch {
+    res.status(401).json({
+      success: false,
+      error: {
+        code: 'INVALID_TOKEN',
+        message: 'Invalid access token'
+      }
+    });
+  }
+};

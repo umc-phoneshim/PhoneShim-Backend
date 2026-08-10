@@ -1,4 +1,4 @@
-import AppError from '../../../shared/errors/AppError';
+import { BadRequestError } from '../../../shared/errors/appError';
 
 export type AppGoal = {
   id: string;
@@ -34,49 +34,89 @@ export type NewAppGoal = {
   goalReason: string | null;
 };
 
-export function createAppGoal(payload: CreateAppGoalPayload): NewAppGoal {
-  if (!payload.monitoredAppId) {
-    throw new AppError('monitoredAppId는 필수입니다.', 400, 'INVALID_MONITORED_APP_ID');
+export type ValidatedAppGoalUpdate = {
+  targetMinutes?: number;
+  targetCount?: number;
+  restrictAfter?: boolean;
+  goalReason?: string | null;
+};
+
+// ERD.md 제약: target_minutes는 10~1430분(23시간 50분) 범위
+const MIN_TARGET_MINUTES = 10;
+const MAX_TARGET_MINUTES = 1430;
+const MAX_GOAL_REASON_LENGTH = 100;
+
+const validateTargetMinutes = (value: number): number => {
+  if (!Number.isInteger(value) || value < MIN_TARGET_MINUTES || value > MAX_TARGET_MINUTES) {
+    throw new BadRequestError(
+      `targetMinutes must be an integer between ${MIN_TARGET_MINUTES} and ${MAX_TARGET_MINUTES}`,
+      'INVALID_TARGET_MINUTES'
+    );
   }
 
-  if (
-    payload.targetMinutes === undefined ||
-    payload.targetMinutes === null ||
-    payload.targetMinutes <= 0
-  ) {
-    throw new AppError('targetMinutes는 0보다 큰 숫자여야 합니다.', 400, 'INVALID_TARGET_MINUTES');
+  return value;
+};
+
+const validateTargetCount = (value: number): number => {
+  if (!Number.isInteger(value) || value < 1) {
+    throw new BadRequestError(
+      'targetCount must be an integer of 1 or more',
+      'INVALID_TARGET_COUNT'
+    );
   }
 
-  if (
-    payload.targetCount === undefined ||
-    payload.targetCount === null ||
-    payload.targetCount <= 0
-  ) {
-    throw new AppError('targetCount는 0보다 큰 숫자여야 합니다.', 400, 'INVALID_TARGET_COUNT');
+  return value;
+};
+
+const normalizeGoalReason = (value: string | null | undefined): string | null | undefined => {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  const normalized = value.trim();
+
+  if (normalized.length > MAX_GOAL_REASON_LENGTH) {
+    throw new BadRequestError(
+      `goalReason must be at most ${MAX_GOAL_REASON_LENGTH} characters`,
+      'INVALID_GOAL_REASON'
+    );
+  }
+
+  return normalized.length > 0 ? normalized : null;
+};
+
+export function createAppGoalEntity(payload: CreateAppGoalPayload): NewAppGoal {
+  if (!payload.monitoredAppId.trim()) {
+    throw new BadRequestError('monitoredAppId is required', 'VALIDATION_ERROR');
   }
 
   return {
     monitoredAppId: payload.monitoredAppId,
-    targetMinutes: payload.targetMinutes,
-    targetCount: payload.targetCount,
+    targetMinutes: validateTargetMinutes(payload.targetMinutes),
+    targetCount: validateTargetCount(payload.targetCount),
     restrictAfter: payload.restrictAfter ?? false,
-    goalReason: payload.goalReason ?? null
+    goalReason: normalizeGoalReason(payload.goalReason) ?? null
   };
 }
 
-export function applyAppGoalUpdate(payload: UpdateAppGoalPayload): UpdateAppGoalPayload {
-  if (payload.targetMinutes !== undefined && payload.targetMinutes <= 0) {
-    throw new AppError('targetMinutes는 0보다 큰 숫자여야 합니다.', 400, 'INVALID_TARGET_MINUTES');
+export function createAppGoalUpdate(payload: UpdateAppGoalPayload): ValidatedAppGoalUpdate {
+  const update: ValidatedAppGoalUpdate = {};
+
+  if (payload.targetMinutes !== undefined) {
+    update.targetMinutes = validateTargetMinutes(payload.targetMinutes);
   }
 
-  if (payload.targetCount !== undefined && payload.targetCount <= 0) {
-    throw new AppError('targetCount는 0보다 큰 숫자여야 합니다.', 400, 'INVALID_TARGET_COUNT');
+  if (payload.targetCount !== undefined) {
+    update.targetCount = validateTargetCount(payload.targetCount);
   }
 
-  return {
-    ...(payload.targetMinutes !== undefined && { targetMinutes: payload.targetMinutes }),
-    ...(payload.targetCount !== undefined && { targetCount: payload.targetCount }),
-    ...(payload.restrictAfter !== undefined && { restrictAfter: payload.restrictAfter }),
-    ...(payload.goalReason !== undefined && { goalReason: payload.goalReason })
-  };
+  if (payload.restrictAfter !== undefined) {
+    update.restrictAfter = payload.restrictAfter;
+  }
+
+  if (payload.goalReason !== undefined) {
+    update.goalReason = normalizeGoalReason(payload.goalReason) ?? null;
+  }
+
+  return update;
 }

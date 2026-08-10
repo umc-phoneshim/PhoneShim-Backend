@@ -1,61 +1,57 @@
+import { UnauthorizedError } from '../../../shared/errors/appError';
+import { sendCreated, sendSuccess } from '../../../shared/responses/apiResponse';
 import asyncHandler from '../../../shared/utils/asyncHandler';
 
 import * as monitoredAppService from '../application/monitoredAppService';
-import type {
-  CreateMonitoredAppRequestBody,
-  UpdateMonitoredAppRequestBody
-} from './monitoredAppDto';
+import type { CreateMonitoredAppRequest, UpdateMonitoredAppRequest } from './monitoredAppDto';
+
+const getAuthenticatedUserId = (user?: Express.Request['user']): string => {
+  if (!user?.userId) {
+    throw new UnauthorizedError('Authentication required');
+  }
+
+  return user.userId;
+};
 
 export const createMonitoredApp = asyncHandler(async (req, res) => {
-  const body = req.body as CreateMonitoredAppRequestBody;
-
-  const monitoredApp = await monitoredAppService.registerMonitoredApp({
-    ...body,
-    userId: req.userId!
+  const userId = getAuthenticatedUserId(req.user);
+  const result = await monitoredAppService.createMonitoredApp({
+    ...(req.body as CreateMonitoredAppRequest),
+    userId
   });
 
-  res.status(201).json({
-    success: true,
-    data: monitoredApp
-  });
+  sendCreated(res, result);
 });
 
 export const getMonitoredApps = asyncHandler(async (req, res) => {
-  const monitoredApps = await monitoredAppService.getMonitoredApps(req.userId!);
+  const userId = getAuthenticatedUserId(req.user);
+  const result = await monitoredAppService.getMonitoredApps(userId);
 
-  res.json({
-    success: true,
-    data: monitoredApps
-  });
+  sendSuccess(res, result);
 });
 
 export const getMonitoredAppById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const userId = getAuthenticatedUserId(req.user);
+  const result = await monitoredAppService.getMonitoredAppById(req.params.id, userId);
 
-  const monitoredApp = await monitoredAppService.getMonitoredAppById(id);
-
-  res.json({
-    success: true,
-    data: monitoredApp
-  });
+  sendSuccess(res, result);
 });
 
 export const updateMonitoredApp = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const body = req.body as UpdateMonitoredAppRequestBody;
+  const userId = getAuthenticatedUserId(req.user);
+  const result = await monitoredAppService.updateMonitoredApp(
+    req.params.id,
+    userId,
+    req.body as UpdateMonitoredAppRequest
+  );
 
-  const monitoredApp = await monitoredAppService.updateMonitoredApp(id, body);
-
-  res.json({
-    success: true,
-    data: monitoredApp
-  });
+  sendSuccess(res, result);
 });
 
 export const deleteMonitoredApp = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const userId = getAuthenticatedUserId(req.user);
 
-  await monitoredAppService.deleteMonitoredApp(id);
+  await monitoredAppService.deleteMonitoredApp(req.params.id, userId);
 
   res.status(204).send();
 });

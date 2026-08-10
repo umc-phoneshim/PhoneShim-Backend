@@ -1,66 +1,61 @@
+import { BadRequestError, UnauthorizedError } from '../../../shared/errors/appError';
+import { sendCreated, sendSuccess } from '../../../shared/responses/apiResponse';
 import asyncHandler from '../../../shared/utils/asyncHandler';
-import AppError from '../../../shared/errors/AppError';
 
 import * as appGoalService from '../application/appGoalService';
-import type { CreateAppGoalRequestBody, UpdateAppGoalRequestBody } from './appGoalDto';
+import type { CreateAppGoalRequest, UpdateAppGoalRequest } from './appGoalDto';
+
+const getAuthenticatedUserId = (user?: Express.Request['user']): string => {
+  if (!user?.userId) {
+    throw new UnauthorizedError('Authentication required');
+  }
+
+  return user.userId;
+};
 
 export const createAppGoal = asyncHandler(async (req, res) => {
-  const body = req.body as CreateAppGoalRequestBody;
+  const userId = getAuthenticatedUserId(req.user);
+  const body = req.body as CreateAppGoalRequest;
 
-  const appGoal = await appGoalService.registerAppGoal(body);
-
-  res.status(201).json({
-    success: true,
-    data: appGoal
+  const result = await appGoalService.createAppGoal(userId, {
+    monitoredAppId: body.monitoredAppId,
+    targetMinutes: body.targetMinutes,
+    targetCount: body.targetCount,
+    restrictAfter: body.restrictAfter,
+    goalReason: body.goalReason
   });
+
+  sendCreated(res, result);
 });
 
 export const getAppGoal = asyncHandler(async (req, res) => {
-  const monitoredAppId = req.query.monitoredAppId as string | undefined;
+  const userId = getAuthenticatedUserId(req.user);
+  const monitoredAppId = req.query.monitoredAppId;
 
-  if (!monitoredAppId) {
-    throw new AppError(
-      'monitoredAppId 쿼리 파라미터는 필수입니다.',
-      400,
-      'INVALID_MONITORED_APP_ID'
-    );
+  if (typeof monitoredAppId !== 'string' || !monitoredAppId.trim()) {
+    throw new BadRequestError('monitoredAppId is required', 'VALIDATION_ERROR');
   }
 
-  const appGoal = await appGoalService.getAppGoalByMonitoredAppId(monitoredAppId);
+  const result = await appGoalService.getAppGoalByMonitoredAppId(userId, monitoredAppId);
 
-  res.json({
-    success: true,
-    data: appGoal
-  });
-});
-
-export const getAppGoalById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  const appGoal = await appGoalService.getAppGoalById(id);
-
-  res.json({
-    success: true,
-    data: appGoal
-  });
+  sendSuccess(res, result);
 });
 
 export const updateAppGoal = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const body = req.body as UpdateAppGoalRequestBody;
+  const userId = getAuthenticatedUserId(req.user);
+  const result = await appGoalService.updateAppGoal(
+    req.params.id,
+    userId,
+    req.body as UpdateAppGoalRequest
+  );
 
-  const appGoal = await appGoalService.updateAppGoal(id, body);
-
-  res.json({
-    success: true,
-    data: appGoal
-  });
+  sendSuccess(res, result);
 });
 
 export const deleteAppGoal = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const userId = getAuthenticatedUserId(req.user);
 
-  await appGoalService.deleteAppGoal(id);
+  await appGoalService.deleteAppGoal(req.params.id, userId);
 
   res.status(204).send();
 });

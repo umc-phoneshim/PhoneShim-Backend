@@ -227,3 +227,39 @@ feat: implement timer start API
 
 fix: correct accumulated study time after app force quit
 ```
+
+---
+
+## 10. Docker로 실행하기
+
+Docker Compose는 PostgreSQL을 먼저 실행하고, Prisma 마이그레이션이 성공한 후 빌드된 API 서버를 시작합니다.
+
+Docker Engine과 Docker Compose v2가 설치되어 있어야 합니다. Windows와 macOS에서는 Docker Desktop을 사용할 수 있습니다.
+
+### 실행
+
+```bash
+docker compose up --build
+```
+
+- API: `http://localhost:3000`
+- Health check: `http://localhost:3000/health`
+- Swagger UI: `http://localhost:3000/api-docs`
+- PostgreSQL: `localhost:5432`
+
+서비스 상태와 API 로그는 다음 명령으로 확인합니다.
+
+```bash
+docker compose ps
+docker compose logs -f api
+```
+
+서비스를 종료하려면 다음 명령을 사용합니다.
+
+```bash
+docker compose down
+```
+
+PostgreSQL 데이터는 `postgres-data` named volume에 유지됩니다. 데이터를 포함해 초기화해야 할 때만 `docker compose down -v`를 사용하세요.
+
+포트, 데이터베이스 계정, JWT Secret과 CORS Origin은 `.env.example`을 참고해 `.env`에서 변경할 수 있습니다. 저장소의 기본 PostgreSQL 비밀번호와 JWT Secret은 로컬 개발 전용이므로 운영 환경에서는 반드시 안전한 값으로 변경해야 합니다.
