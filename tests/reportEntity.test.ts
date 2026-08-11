@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { buildReasonSummaries, parseReportRange } from '../src/domains/report/domain/reportEntity';
+import {
+  buildReasonSummaries,
+  buildSuggestion,
+  parseReportRange
+} from '../src/domains/report/domain/reportEntity';
 
 describe('parseReportRange', () => {
   afterEach(() => {
@@ -126,5 +130,73 @@ describe('buildReasonSummaries', () => {
         }
       ])
     ).toEqual([]);
+  });
+});
+
+describe('buildSuggestion', () => {
+  it('returns NO_GOAL when there is no total goal', () => {
+    const result = buildSuggestion({ phoneTotalMinutes: 200, totalTargetMinutes: null, apps: [] });
+
+    expect(result).toMatchObject({ suggestionType: 'NO_GOAL', excessMinutes: 0, appName: null });
+  });
+
+  it('returns TOTAL_EXCEEDED with the most-used app when phone total exceeds the goal', () => {
+    const result = buildSuggestion({
+      phoneTotalMinutes: 190,
+      totalTargetMinutes: 120,
+      apps: [
+        { appName: 'YouTube', usedMinutes: 80, targetMinutes: 60 },
+        { appName: 'KakaoTalk', usedMinutes: 20, targetMinutes: null }
+      ]
+    });
+
+    expect(result).toMatchObject({
+      suggestionType: 'TOTAL_EXCEEDED',
+      excessMinutes: 70,
+      appName: 'YouTube'
+    });
+    expect(result.message).toContain('70분');
+    expect(result.message).toContain('YouTube');
+  });
+
+  it('returns TOTAL_EXCEEDED with no app when no monitored app was used', () => {
+    const result = buildSuggestion({
+      phoneTotalMinutes: 150,
+      totalTargetMinutes: 120,
+      apps: [{ appName: 'YouTube', usedMinutes: 0, targetMinutes: 60 }]
+    });
+
+    expect(result).toMatchObject({
+      suggestionType: 'TOTAL_EXCEEDED',
+      excessMinutes: 30,
+      appName: null
+    });
+  });
+
+  it('returns APP_EXCEEDED for the most-exceeded app when the total is achieved', () => {
+    const result = buildSuggestion({
+      phoneTotalMinutes: 100,
+      totalTargetMinutes: 120,
+      apps: [
+        { appName: 'YouTube', usedMinutes: 70, targetMinutes: 60 }, // 10분 초과
+        { appName: 'Instagram', usedMinutes: 50, targetMinutes: 20 } // 30분 초과
+      ]
+    });
+
+    expect(result).toMatchObject({
+      suggestionType: 'APP_EXCEEDED',
+      excessMinutes: 30,
+      appName: 'Instagram'
+    });
+  });
+
+  it('returns ACHIEVED when the total and every app goal are met', () => {
+    const result = buildSuggestion({
+      phoneTotalMinutes: 90,
+      totalTargetMinutes: 120,
+      apps: [{ appName: 'YouTube', usedMinutes: 30, targetMinutes: 60 }]
+    });
+
+    expect(result).toMatchObject({ suggestionType: 'ACHIEVED', excessMinutes: 0, appName: null });
   });
 });
