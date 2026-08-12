@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as monitoredAppRepository from '../src/domains/monitoredApp/infrastructure/monitoredAppRepository';
-import { createUsageReason } from '../src/domains/usageReason/application/usageReasonService';
+import {
+  createUsageReason,
+  getUsageReasonCalendar
+} from '../src/domains/usageReason/application/usageReasonService';
 import * as usageReasonRepository from '../src/domains/usageReason/infrastructure/usageReasonRepository';
 
 vi.mock('../src/domains/monitoredApp/infrastructure/monitoredAppRepository', () => ({
@@ -9,10 +12,12 @@ vi.mock('../src/domains/monitoredApp/infrastructure/monitoredAppRepository', () 
 }));
 
 vi.mock('../src/domains/usageReason/infrastructure/usageReasonRepository', () => ({
+  findAllByUserIdInRange: vi.fn(),
   saveMany: vi.fn()
 }));
 
 const findByIdAndUserIdMock = vi.mocked(monitoredAppRepository.findByIdAndUserId);
+const findAllByUserIdInRangeMock = vi.mocked(usageReasonRepository.findAllByUserIdInRange);
 const saveManyMock = vi.mocked(usageReasonRepository.saveMany);
 
 const payload = {
@@ -81,5 +86,33 @@ describe('usageReasonService', () => {
       { id: 'reason-2', date: '2026-07-16', reason: 'HABIT' }
     ]);
     expect(saveManyMock).toHaveBeenCalledOnce();
+  });
+});
+
+describe('getUsageReasonCalendar', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns every date in the month with reason presence', async () => {
+    findAllByUserIdInRangeMock.mockResolvedValueOnce([
+      { date: new Date('2026-07-01T00:00:00.000Z') },
+      { date: new Date('2026-07-01T00:00:00.000Z') },
+      { date: new Date('2026-07-03T00:00:00.000Z') }
+    ] as never);
+
+    const result = await getUsageReasonCalendar('user-1', '2026-07');
+
+    expect(result.slice(0, 3)).toEqual([
+      { date: '2026-07-01', hasReason: true },
+      { date: '2026-07-02', hasReason: false },
+      { date: '2026-07-03', hasReason: true }
+    ]);
+    expect(result).toHaveLength(31);
+    expect(findAllByUserIdInRangeMock).toHaveBeenCalledWith(
+      'user-1',
+      new Date('2026-07-01T00:00:00.000Z'),
+      new Date('2026-07-31T00:00:00.000Z')
+    );
   });
 });
