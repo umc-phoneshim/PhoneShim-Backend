@@ -142,6 +142,17 @@ export async function socialLogin(provider: Provider, accessToken: string) {
 
 export async function linkAccount(provider: Provider, token: string, userId: string) {
   const userInfo = await verifyProviderUser(provider, token);
+  const existingEmailUser = await prisma.user.findUnique({
+    where: { email: userInfo.email }
+  });
+
+  if (existingEmailUser && existingEmailUser.id !== userId) {
+    throw new AppError(
+      409,
+      'SOCIAL_ACCOUNT_ALREADY_LINKED',
+      '이미 다른 계정에 연결된 소셜 계정입니다.'
+    );
+  }
 
   try {
     await linkSocialAccountToUser(provider, userInfo, userId);

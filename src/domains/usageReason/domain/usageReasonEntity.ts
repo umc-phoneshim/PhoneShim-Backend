@@ -1,10 +1,6 @@
 import { BadRequestError } from '../../../shared/errors/appError';
 
-import {
-  formatDateOnly,
-  getKstDateOnly,
-  parseMonthRange
-} from '../../usageLog/domain/usageLogEntity';
+import { formatDateOnly, getKstDateOnly } from '../../usageLog/domain/usageLogEntity';
 
 // 사용 이유 팝업의 고정 객관식 선택지 (Figma REP-01: 여가/이동/습관/정보/기타).
 export const USAGE_REASON_CODES = ['LEISURE', 'COMMUTE', 'HABIT', 'INFO', 'OTHER'] as const;
@@ -145,10 +141,10 @@ export function createUsageReasonEntities(payload: CreateUsageReasonPayload): Ne
 }
 
 export function buildUsageReasonCalendar(
-  month: string,
+  start: Date,
+  end: Date,
   usageReasons: { date: Date }[]
 ): UsageReasonCalendarDay[] {
-  const { start, end } = parseMonthRange(month);
   const reasonDates = new Set(usageReasons.map((reason) => formatDateOnly(reason.date)));
   const calendar: UsageReasonCalendarDay[] = [];
 

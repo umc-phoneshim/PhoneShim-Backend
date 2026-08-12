@@ -61,5 +61,5 @@ export async function getUsageReasonCalendar(
   const { start, end } = parseMonthRange(month);
   const usageReasons = await usageReasonRepository.findAllByUserIdInRange(userId, start, end);
 
-  return buildUsageReasonCalendar(month, usageReasons);
+  return buildUsageReasonCalendar(start, end, usageReasons);
 }
