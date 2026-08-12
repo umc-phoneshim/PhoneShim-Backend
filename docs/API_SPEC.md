@@ -77,10 +77,6 @@
 | Domain       | Method | Path                                 | 설명                        | 상태     |
 | ------------ | ------ | ------------------------------------ | --------------------------- | -------- |
 | System       | GET    | `/health`                            | 서버 상태 확인              | 구현완료 |
-| Timer        | POST   | `/api/timers/start`                  | 타이머 시작                 | 부분구현 |
-| Timer        | POST   | `/api/timers/stop`                   | 타이머 종료                 | 부분구현 |
-| Group        | GET    | `/api/groups`                        | 그룹 목록 조회              | 부분구현 |
-| Group        | POST   | `/api/groups`                        | 그룹 생성                   | 부분구현 |
 | MonitoredApp | POST   | `/api/monitored-apps`                | 주의 앱 등록                | 구현완료 |
 | MonitoredApp | GET    | `/api/monitored-apps`                | 주의 앱 목록 조회           | 구현완료 |
 | MonitoredApp | GET    | `/api/monitored-apps/:id`            | 주의 앱 단건 조회           | 구현완료 |
@@ -130,7 +126,7 @@
 | 온보딩/설정     | `SET101`~`SET110`   | 주의 앱/전체 목표/앱별 목표 API로 분산 반영. 사용자 성별/나이, 온보딩 완료/스킵 상태는 API/DB 계약 추가 필요                                                                               |
 | 메인            | `MAIN101`~`MAIN105` | Dashboard, UsageLog, Reminder 조회 API로 반영                                                                                                                                              |
 | 리마인더        | `REM101`~`REM109`   | Reminder API와 Socket.IO 동기화 계약에 반영                                                                                                                                                |
-| 리포트          | `REP101`~`REP107`   | UsageLog/UsageReason, Report/AI, AlertSetting으로 분산 반영. 객관식 사용 사유 선택지와 일별 제안 저장 여부는 정책 확정 필요. 개정 이력상 `REP-08` 추가가 확인되었으나 세부 API 계약은 미정 |
+| 리포트          | `REP101`~`REP108`   | UsageLog/UsageReason, Report/AI, AlertSetting으로 분산 반영. 객관식 사용 사유 선택지와 일별 제안 저장 여부는 정책 확정 필요. `REP-08` 데일리 리포트 알림은 알림 시간 설정까지만 AlertSetting API로 반영되어 있으며, 푸시 발송/푸시 토큰/알림 문구 제공 방식은 별도 알림 인프라 계약 필요 |
 | 마이            | `MY101`~`MY106`     | User/Auth API에 반영                                                                                                                                                                       |
 | 설정 수정       | `PREF101`~`PREF106` | 기존 개별 조회/수정 API로 일부 반영. 통합 설정 조회/저장 API는 미정                                                                                                                        |
 
@@ -353,101 +349,7 @@
 | ------ | ----------------------- | -------------------------------- |
 | 404    | MONITORED_APP_NOT_FOUND | 존재하지 않거나 본인 소유가 아님 |
 
-## 7. Timer
-
-현재 타이머 API는 임시/부분 구현입니다. 기능명세서의 스마트폰 사용 시간 집계와는 아직 직접 연결되어 있지 않습니다.
-
-### POST `/api/timers/start`
-
-- 인증: 불필요
-- 상태: 부분구현
-
-#### Request Body
-
-| 필드   | 타입   | 필수 | 설명      |
-| ------ | ------ | ---- | --------- |
-| userId | string | Y    | 사용자 ID |
-
-#### Response 201
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": null,
-    "userId": "uuid",
-    "startedAt": "2026-07-07T00:00:00.000Z",
-    "status": "running"
-  }
-}
-```
-
-### POST `/api/timers/stop`
-
-- 인증: 불필요
-- 상태: 부분구현
-
-#### Request Body
-
-| 필드    | 타입   | 필수 | 설명      |
-| ------- | ------ | ---- | --------- |
-| timerId | string | Y    | 타이머 ID |
-
-#### Response 200
-
-```json
-{
-  "success": true,
-  "data": {
-    "timerId": "timer-id",
-    "stoppedAt": "2026-07-07T00:00:00.000Z"
-  }
-}
-```
-
-## 8. Group
-
-현재 그룹 API는 샘플/부분 구현입니다. 기능명세서 핵심 화면과 직접 연결된 API는 아닙니다.
-
-### GET `/api/groups`
-
-- 인증: 불필요
-- 상태: 부분구현
-
-#### Response 200
-
-```json
-{
-  "success": true,
-  "data": []
-}
-```
-
-### POST `/api/groups`
-
-- 인증: 불필요
-- 상태: 부분구현
-
-#### Request Body
-
-| 필드 | 타입   | 필수 | 설명      |
-| ---- | ------ | ---- | --------- |
-| name | string | Y    | 그룹 이름 |
-
-#### Response 201
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": null,
-    "name": "Morning study group",
-    "createdAt": "2026-07-07T00:00:00.000Z"
-  }
-}
-```
-
-## 9. Auth / User
+## 7. Auth / User
 
 기능명세서 `A101`, `A102`, `MY101`, `MY102`, `MY104`, `MY105`, `MY106`에 해당합니다.
 
@@ -788,7 +690,7 @@
 | ------ | ---------------- | ------------------------------------------------------------- |
 | 400    | VALIDATION_ERROR | gender 또는 ageGroup 누락, 타입 불일치, 허용되지 않은 enum 값 |
 
-## 10. TotalGoal
+## 8. TotalGoal
 
 기능명세서 `SET105`, `MAIN103`, `PREF101`, `PREF103`, 정책 `SET-03`, `PR-01`, `PR-03`에 해당합니다.
 
@@ -904,7 +806,7 @@
 | 400    | VALIDATION_ERROR       | 수정 가능한 필드가 하나도 없음      |
 | 404    | TOTAL_GOAL_NOT_FOUND   | 전체 목표가 없음                    |
 
-## 11. AppGoal
+## 9. AppGoal
 
 기능명세서 `SET106`, `SET107`, `SET108`, `MAIN104`, `PREF101`, `PREF104`, 정책 `SET-04`, `SET-05`, `PR-01`, `PR-02`, `PR-03`에 해당합니다.
 
@@ -1058,7 +960,7 @@
 | ------ | ------------------ | --------------------------------- |
 | 404    | APP_GOAL_NOT_FOUND | 앱 목표가 없거나 본인 소유가 아님 |
 
-## 12. Reminder
+## 10. Reminder
 
 기능명세서 `REM101`~`REM109`, 서비스 정책 `REM-01`~`REM-10`에 해당합니다.
 
@@ -1435,7 +1337,7 @@ Socket.IO 구현 시 다음 이벤트명을 사용합니다.
 | ------ | ------------------ | ------------------------------- |
 | 404    | REMINDER_NOT_FOUND | 할 일이 없거나 본인 소유가 아님 |
 
-## 13. UsageLog / UsageReason / UsageSession
+## 11. UsageLog / UsageReason / UsageSession
 
 기능명세서 `REP101`, `REP102`, `REP106`, 정책 `REP-01`, `REP-07`에 해당합니다.
 
@@ -1744,7 +1646,7 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 }
 ```
 
-## 14. Dashboard
+## 12. Dashboard
 
 메인 화면에서 사용할 오늘 전체 사용 요약을 조회합니다.
 
@@ -1773,9 +1675,9 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 }
 ```
 
-## 15. AlertSetting
+## 13. AlertSetting
 
-기능명세서 `REP107`, 정책 `REP-04`, `REP-05`에 해당합니다.
+기능명세서 `REP107`, `REP108`, 정책 `REP-04`, `REP-05`에 해당합니다.
 
 공통 정책:
 
@@ -1783,7 +1685,8 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 - 알림 수신은 항상 ON을 기본으로 합니다.
 - 알림 시간은 22:00~23:59 사이만 허용합니다.
 - DB 저장값은 `alertTimeMinutes`입니다.
-- 데일리 리포트 알림 발송과 푸시 토큰 관리는 별도 알림 인프라 계약이 필요합니다.
+- `REP-08` 데일리 리포트 알림은 현재 알림 시간 설정까지만 서버 API로 제공합니다.
+- 실제 푸시 발송, 푸시 토큰 관리, 알림 문구를 서버가 내려줄지 여부는 별도 알림 인프라 계약이 필요합니다.
 
 ### GET `/api/alert-settings`
 
@@ -1845,7 +1748,7 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 | ------ | ------------------ | ----------------------- |
 | 400    | INVALID_ALERT_TIME | 1320~1439 범위를 벗어남 |
 
-## 16. Report
+## 14. Report
 
 기능명세서 `REP103`, `REP104`, 정책 `REP-02`, `REP-03`에 해당합니다.
 
@@ -1948,7 +1851,7 @@ REP103: 지정한 날짜(없으면 KST 오늘)의 목표 달성 상태로 "쉼�
 | ACHIEVED       | 전체·주의 앱 모두 달성(제안3)          |
 | NO_GOAL        | 전체 목표 미설정 → 목표 설정 안내      |
 
-## 17. DeviceUsage
+## 15. DeviceUsage
 
 기기 전체(모든 앱) 사용량을 일별로 기록합니다. 주의 앱만 담는 UsageLog와 달리, 데일리 리포트의 목표 달성 판정과 대시보드의 "폰 전체 사용" 기준값으로 사용합니다.
 
@@ -1990,7 +1893,7 @@ REP103: 지정한 날짜(없으면 KST 오늘)의 목표 달성 상태로 "쉼�
 | ------ | ---------------- | ------------------------------------------- |
 | 400    | VALIDATION_ERROR | totalUsedMinutes 누락 또는 0 미만/정수 아님 |
 
-## 18. 구현 순서 권장안
+## 16. 구현 순서 권장안
 
 1. Auth/User
 2. TotalGoal
@@ -2000,7 +1903,7 @@ REP103: 지정한 날짜(없으면 KST 오늘)의 목표 달성 상태로 "쉼�
 6. Reminder
 7. Report/AI
 
-## 19. 문서 운영 규칙
+## 17. 문서 운영 규칙
 
 - 도메인 구현 PR은 이 문서의 endpoint, request, response, error code를 기준으로 작성합니다.
 - 구현 중 정책 변경이 필요하면 코드보다 먼저 이 문서를 수정하고 PR 설명에 변경 이유를 남깁니다.
