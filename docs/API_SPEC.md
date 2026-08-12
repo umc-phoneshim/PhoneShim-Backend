@@ -89,11 +89,11 @@
 | Auth         | POST   | `/api/auth/google`                   | 구글 로그인/회원가입        | 구현완료 |
 | Auth         | POST   | `/api/auth/kakao`                    | 카카오 로그인/회원가입      | 구현완료 |
 | Auth         | DELETE | `/api/auth/withdraw`                 | 회원 탈퇴 요청              | 구현완료 |
-| Auth         | POST   | `/api/auth/logout`                   | 로그아웃                    | 예정     |
-| Auth         | POST   | `/api/auth/link-account`             | 동일 이메일 소셜 계정 연동  | 예정     |
-| Auth         | POST   | `/api/auth/recover-withdrawal`       | 탈퇴 유예 계정 복구         | 예정     |
+| Auth         | POST   | `/api/auth/logout`                   | 로그아웃                    | 구현완료 |
+| Auth         | POST   | `/api/auth/link-account`             | 동일 이메일 소셜 계정 연동  | 구현완료 |
+| Auth         | POST   | `/api/auth/recover-withdrawal`       | 탈퇴 유예 계정 복구         | 구현완료 |
 | User         | GET    | `/api/users/me`                      | 내 프로필 조회              | 구현완료 |
-| User         | PATCH  | `/api/users/me`                      | 내 이름/목표 문구 수정      | 예정     |
+| User         | PATCH  | `/api/users/me`                      | 내 이름/목표 문구 수정      | 구현완료 |
 | User         | PATCH  | `/api/users/me/onboarding`           | 성별/연령대 수정            | 구현완료 |
 | TotalGoal    | POST   | `/api/total-goals`                   | 전체 목표 생성/설정         | 구현완료 |
 | TotalGoal    | GET    | `/api/total-goals`                   | 전체 목표 조회              | 구현완료 |
@@ -113,7 +113,7 @@
 | UsageLog     | PUT    | `/api/usage-logs`                    | 앱별 일일 사용량 기록/갱신  | 구현완료 |
 | DeviceUsage  | PUT    | `/api/device-usage`                  | 기기 전체 사용량 기록/갱신  | 구현완료 |
 | UsageReason  | POST   | `/api/usage-reasons`                 | 사용 사유 입력              | 구현완료 |
-| UsageReason  | GET    | `/api/usage-reasons/calendar?month=` | 날짜별 사유 입력 여부 조회  | 예정     |
+| UsageReason  | GET    | `/api/usage-reasons/calendar?month=` | 날짜별 사유 입력 여부 조회  | 구현완료 |
 | UsageSession | POST   | `/api/usage-sessions`                | 앱 사용 세션(시작~끝) 저장  | 구현완료 |
 | UsageSession | GET    | `/api/usage-sessions?date=`          | 날짜별 타임테이블 세션 조회 | 구현완료 |
 | Dashboard    | GET    | `/api/dashboard/daily-summary`       | 오늘 전체 사용 요약 조회    | 구현완료 |
@@ -568,18 +568,21 @@
 
 ### POST `/api/auth/link-account`
 
-동일 이메일의 기존 계정에 신규 소셜 계정을 연결합니다.
+현재 인증된 사용자 계정에 신규 소셜 계정을 연결합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
+- 클라이언트가 전달한 `providerUserId` 또는 `email`은 신원 증명으로 사용하지 않습니다.
+- Google은 `idToken`, Kakao는 `accessToken`을 서버가 검증하고, 검증된 소셜 사용자 정보의 `providerUserId`와 `email`만 저장합니다.
+- 기존 명세의 `{ provider, providerUserId, email }` 요청 계약은 Android 팀 보안 피드백에 따라 폐기되었습니다.
 
 #### Request Body
 
-| 필드           | 타입   | 필수 | 설명                       |
-| -------------- | ------ | ---- | -------------------------- |
-| provider       | string | Y    | `GOOGLE` 또는 `KAKAO`      |
-| providerUserId | string | Y    | 소셜 제공자 사용자 고유 ID |
-| email          | string | Y    | 연결할 소셜 계정 이메일    |
+| 필드        | 타입   | 필수 | 설명                                      |
+| ----------- | ------ | ---- | ----------------------------------------- |
+| provider    | string | Y    | `GOOGLE` 또는 `KAKAO`                     |
+| idToken     | string | C    | Google ID token. `provider=GOOGLE`일 때 Y |
+| accessToken | string | C    | Kakao access token. `provider=KAKAO`일 때 Y |
 
 #### Response 200
 
@@ -600,6 +603,12 @@
 | Status | Code                          | 설명                             |
 | ------ | ----------------------------- | -------------------------------- |
 | 400    | VALIDATION_ERROR              | 필수값 누락 또는 잘못된 provider |
+| 400    | ID_TOKEN_REQUIRED             | Google 요청에서 idToken 누락     |
+| 400    | ACCESS_TOKEN_REQUIRED         | Kakao 요청에서 accessToken 누락  |
+| 400    | EMAIL_PERMISSION_REQUIRED     | Kakao 이메일 제공 동의 필요      |
+| 401    | INVALID_GOOGLE_ID_TOKEN       | Google ID token 검증 실패        |
+| 401    | INVALID_TOKEN                 | Kakao access token 검증 실패     |
+| 403    | EMAIL_NOT_VERIFIED            | Google 이메일 미인증             |
 | 409    | SOCIAL_ACCOUNT_ALREADY_LINKED | 이미 연결된 소셜 계정            |
 
 ### POST `/api/auth/logout`
@@ -607,13 +616,72 @@
 로그아웃을 수행합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 - 서버는 별도 토큰 블랙리스트를 사용하지 않는 한 204만 반환합니다.
 - 클라이언트는 로컬에 저장된 JWT를 삭제해야 합니다.
 
 #### Response 204
 
 응답 body 없음.
+
+#### Errors
+
+| Status | Code          | 설명                 |
+| ------ | ------------- | -------------------- |
+| 401    | UNAUTHORIZED  | 인증 토큰 누락       |
+| 401    | INVALID_TOKEN | 유효하지 않은 JWT    |
+
+### POST `/api/auth/recover-withdrawal`
+
+탈퇴 유예 상태(`WITHDRAWAL_PENDING`)의 계정을 복구합니다.
+
+- 인증: 불필요
+- 상태: 구현완료
+- 소셜 토큰 검증 결과를 복구 권한 증명으로 사용합니다.
+- 클라이언트가 임의로 보낸 `providerUserId` 또는 `email`은 사용하지 않습니다.
+- 복구 대상이 없거나 탈퇴 유예 상태가 아니면 모두 `404 USER_NOT_FOUND`로 응답해 계정 상태 노출을 줄입니다.
+- `withdrawalRequestedAt` 기준 14일을 초과하면 복구할 수 없습니다.
+
+#### Request Body
+
+| 필드        | 타입   | 필수 | 설명                                      |
+| ----------- | ------ | ---- | ----------------------------------------- |
+| provider    | string | Y    | `GOOGLE` 또는 `KAKAO`                     |
+| idToken     | string | C    | Google ID token. `provider=GOOGLE`일 때 Y |
+| accessToken | string | C    | Kakao access token. `provider=KAKAO`일 때 Y |
+
+#### Response 200
+
+```json
+{
+  "success": true,
+  "data": {
+    "accessToken": "jwt-access-token",
+    "user": {
+      "id": "uuid",
+      "email": "user@example.com",
+      "name": "홍길동",
+      "profileImage": null,
+      "motivation": "오늘은 필요한 앱만 보기",
+      "status": "ACTIVE"
+    }
+  }
+}
+```
+
+#### Errors
+
+| Status | Code                      | 설명                               |
+| ------ | ------------------------- | ---------------------------------- |
+| 400    | VALIDATION_ERROR          | provider 누락 또는 잘못된 provider |
+| 400    | ID_TOKEN_REQUIRED         | Google 요청에서 idToken 누락       |
+| 400    | ACCESS_TOKEN_REQUIRED     | Kakao 요청에서 accessToken 누락    |
+| 400    | EMAIL_PERMISSION_REQUIRED | Kakao 이메일 제공 동의 필요        |
+| 401    | INVALID_GOOGLE_ID_TOKEN   | Google ID token 검증 실패          |
+| 401    | INVALID_TOKEN             | Kakao access token 검증 실패       |
+| 403    | EMAIL_NOT_VERIFIED        | Google 이메일 미인증               |
+| 404    | USER_NOT_FOUND            | 복구 대상 계정을 찾을 수 없음      |
+| 410    | WITHDRAWAL_EXPIRED        | 탈퇴 복구 가능 기간이 만료됨       |
 
 ### GET `/api/users/me`
 
@@ -647,7 +715,7 @@
 내 이름과 목표/다짐 문구를 수정합니다.
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
 
 #### Request Body
 
@@ -1533,6 +1601,45 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 | 400    | VALIDATION_ERROR            | 필수값 누락, `reasonCodes`가 비었거나 허용되지 않은 코드 |
 | 403    | USAGE_REASON_TIME_FORBIDDEN | 입력 가능 시간대가 아님                                  |
 | 404    | MONITORED_APP_NOT_FOUND     | 주의 앱이 없거나 본인 소유가 아님                        |
+
+### GET `/api/usage-reasons/calendar?month=YYYY-MM`
+
+월 단위로 날짜별 사용 사유 입력 여부를 조회합니다.
+
+- 인증: 필요
+- 상태: 구현완료
+- 해당 월의 모든 날짜를 반환합니다.
+- 같은 날짜에 사용 사유 레코드가 여러 개 있어도 `hasReason`은 `true` 하나로 표시합니다.
+
+#### Query Parameters
+
+| 파라미터 | 타입   | 필수 | 설명                 |
+| -------- | ------ | ---- | -------------------- |
+| month    | string | Y    | 조회할 월. `YYYY-MM` |
+
+#### Response 200
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "date": "2026-07-01",
+      "hasReason": true
+    },
+    {
+      "date": "2026-07-02",
+      "hasReason": false
+    }
+  ]
+}
+```
+
+#### Errors
+
+| Status | Code             | 설명                                  |
+| ------ | ---------------- | ------------------------------------- |
+| 400    | VALIDATION_ERROR | month 누락 또는 `YYYY-MM` 형식이 아님 |
 
 ### GET `/api/usage-logs/calendar?month=YYYY-MM`
 
