@@ -581,8 +581,8 @@
 | 필드        | 타입   | 필수 | 설명                                      |
 | ----------- | ------ | ---- | ----------------------------------------- |
 | provider    | string | Y    | `GOOGLE` 또는 `KAKAO`                     |
-| idToken     | string | C    | Google ID token. `provider=GOOGLE`일 때 Y |
-| accessToken | string | C    | Kakao access token. `provider=KAKAO`일 때 Y |
+| idToken     | string | N    | Google ID token. `provider=GOOGLE`일 때 필수 |
+| accessToken | string | N    | Kakao access token. `provider=KAKAO`일 때 필수 |
 
 #### Response 200
 
@@ -647,8 +647,8 @@
 | 필드        | 타입   | 필수 | 설명                                      |
 | ----------- | ------ | ---- | ----------------------------------------- |
 | provider    | string | Y    | `GOOGLE` 또는 `KAKAO`                     |
-| idToken     | string | C    | Google ID token. `provider=GOOGLE`일 때 Y |
-| accessToken | string | C    | Kakao access token. `provider=KAKAO`일 때 Y |
+| idToken     | string | N    | Google ID token. `provider=GOOGLE`일 때 필수 |
+| accessToken | string | N    | Kakao access token. `provider=KAKAO`일 때 필수 |
 
 #### Response 200
 
