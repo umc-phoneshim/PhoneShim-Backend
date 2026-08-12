@@ -120,8 +120,7 @@
 | AlertSetting | GET    | `/api/alert-settings`                | 하루 알림 설정 조회         | 구현완료 |
 | AlertSetting | PATCH  | `/api/alert-settings`                | 하루 알림 시간 수정         | 구현완료 |
 | Report       | GET    | `/api/reports/summary?range=`        | 기간별 사용 사유 요약       | 구현완료 |
-| AI           | POST   | `/api/ai/daily-feedback`             | 일간 AI 피드백 생성         | 예정     |
-| AI           | POST   | `/api/ai/suggest-goal`               | 목표 시간/횟수 AI 제안      | 예정     |
+| Report       | GET    | `/api/reports/suggestion?date=`      | 쉼이의 제안(제안1/2/3)      | 구현완료 |
 
 ### Figma 명세 반영 현황
 
@@ -491,14 +490,14 @@
 
 #### Errors
 
-| Status | Code                       | 설명                         |
-| ------ | -------------------------- | ---------------------------- |
-| 400    | ID_TOKEN_REQUIRED          | idToken 누락                 |
-| 401    | INVALID_GOOGLE_ID_TOKEN    | Google ID token 검증 실패    |
-| 403    | EMAIL_NOT_VERIFIED         | Google 이메일 미인증         |
-| 403    | ACCOUNT_DELETED            | 탈퇴 완료된 계정             |
-| 409    | ACCOUNT_WITHDRAWAL_PENDING | 탈퇴 유예 상태의 계정        |
-| 500    | INTERNAL_SERVER_ERROR      | 로그인 처리 실패             |
+| Status | Code                       | 설명                      |
+| ------ | -------------------------- | ------------------------- |
+| 400    | ID_TOKEN_REQUIRED          | idToken 누락              |
+| 401    | INVALID_GOOGLE_ID_TOKEN    | Google ID token 검증 실패 |
+| 403    | EMAIL_NOT_VERIFIED         | Google 이메일 미인증      |
+| 403    | ACCOUNT_DELETED            | 탈퇴 완료된 계정          |
+| 409    | ACCOUNT_WITHDRAWAL_PENDING | 탈퇴 유예 상태의 계정     |
+| 500    | INTERNAL_SERVER_ERROR      | 로그인 처리 실패          |
 
 ### POST `/api/auth/kakao`
 
@@ -528,12 +527,12 @@
 
 #### Errors
 
-| Status | Code                       | 설명                         |
-| ------ | -------------------------- | ---------------------------- |
-| 400    | ACCESS_TOKEN_REQUIRED      | accessToken 누락             |
-| 403    | ACCOUNT_DELETED            | 탈퇴 완료된 계정             |
-| 409    | ACCOUNT_WITHDRAWAL_PENDING | 탈퇴 유예 상태의 계정        |
-| 500    | INTERNAL_SERVER_ERROR      | 로그인 처리 실패             |
+| Status | Code                       | 설명                  |
+| ------ | -------------------------- | --------------------- |
+| 400    | ACCESS_TOKEN_REQUIRED      | accessToken 누락      |
+| 403    | ACCOUNT_DELETED            | 탈퇴 완료된 계정      |
+| 409    | ACCOUNT_WITHDRAWAL_PENDING | 탈퇴 유예 상태의 계정 |
+| 500    | INTERNAL_SERVER_ERROR      | 로그인 처리 실패      |
 
 ### DELETE `/api/auth/withdraw`
 
@@ -1739,18 +1738,18 @@ KST 기준 오늘의 전체 사용 시간과 전체 목표 대비 상태를 조�
 | ------ | ------------------ | ----------------------- |
 | 400    | INVALID_ALERT_TIME | 1320~1439 범위를 벗어남 |
 
-## 16. Report / AI
+## 16. Report
 
-기능명세서 `REP103`, `REP104`, `REP105`, 정책 `REP-02`, `REP-03`에 해당합니다.
+기능명세서 `REP103`, `REP104`, 정책 `REP-02`, `REP-03`에 해당합니다.
 
 공통 정책:
 
 - **AI를 쓰지 않습니다. 리포트·제안 모두 수학적 계산 + 고정 템플릿으로 생성합니다.** (외부 AI 연동, 서버 DB 문구 생성 없음)
 - 요약(`reports/summary`)은 DAY/WEEK/MONTH 범위에서 사용 이유별로 사용 시간을 집계하고, 각 사유를 주의 앱별로 분해합니다. 앱별 색상 표현은 클라이언트 표시 책임입니다.
 - "어플 사용 분포"(앱별 총 사용량)는 이 API가 아니라 `GET /api/usage-logs?date=`(앱별 `usedMinutes`)로 조회합니다.
-- 제안 팝업(REP103)은 목표 달성 상태에 따라 제안1/2/3 문구를 골라 숫자를 채워 내려줍니다. (엔드포인트는 REP103 구현 시 `GET /api/reports/suggestion`으로 추가 예정)
+- 제안 팝업(`reports/suggestion`, REP103)은 목표 달성 상태에 따라 제안1/2/3 문구를 골라 숫자를 채워 내려줍니다.
 - 목표 달성 캘린더 표시는 전체 폰 목표와 주의 앱 목표를 모두 만족한 날짜에만 달성으로 간주합니다.
-- `ai/daily-feedback`, `ai/suggest-goal`은 AI 폐기로 **더 이상 쓰지 않습니다**(제안은 `reports/suggestion`으로 대체). REP103 작업 시 이 문서에서 정리합니다.
+- (구 `ai/daily-feedback`, `ai/suggest-goal`은 AI 폐기로 삭제되었습니다. 제안은 `reports/suggestion`으로 대체합니다.)
 
 ### GET `/api/reports/summary?range=day|week|month&date=YYYY-MM-DD`
 
@@ -1800,64 +1799,47 @@ REP104: 기간 동안의 사용 사유를 사유별로 집계하고, 각 사유�
 | ------ | -------------------- | ------------------------------------- |
 | 400    | INVALID_REPORT_RANGE | range가 day/week/month 중 하나가 아님 |
 
-### POST `/api/ai/daily-feedback`
+### GET `/api/reports/suggestion?date=YYYY-MM-DD`
 
-금일 사용 로그와 사용 사유를 기반으로 AI 피드백을 생성합니다.
+REP103: 지정한 날짜(없으면 KST 오늘)의 목표 달성 상태로 "쉼이의 제안"을 계산해 문구까지 채워 반환합니다. (AI 아님 — 목표 달성 상태로 제안1/2/3 템플릿을 고르고 숫자만 계산)
 
 - 인증: 필요
-- 상태: 예정
+- 상태: 구현완료
+- 폰 전체 사용량은 `daily_device_usage`(폰 전체 스크린타임) 기준입니다. 그 날 기록이 없으면 0분으로 봅니다.
+- 판단 순서:
+  - 전체 목표가 없으면 → `NO_GOAL`(목표 설정 안내)
+  - 폰 전체 사용 > 전체 목표 → `TOTAL_EXCEEDED`(제안1). `appName`은 그 날 가장 많이 쓴 주의 앱(아무 앱도 안 썼으면 `null`).
+  - 전체는 달성했지만 목표를 초과한 주의 앱이 있으면 → `APP_EXCEEDED`(제안2). 가장 많이 초과한 앱.
+  - 전체·주의 앱 모두 달성 → `ACHIEVED`(제안3).
 
-#### Request Body
+#### Query Parameters
 
-| 필드 | 타입   | 필수 | 설명                       |
-| ---- | ------ | ---- | -------------------------- |
-| date | string | N    | 기준 날짜. 없으면 KST 오늘 |
+| 필드 | 타입   | 필수 | 설명                                    |
+| ---- | ------ | ---- | --------------------------------------- |
+| date | string | N    | 기준 날짜 `YYYY-MM-DD`. 없으면 KST 오늘 |
 
 #### Response 200
+
+`message`는 서버가 템플릿에 숫자를 채워 완성한 문구입니다. `excessMinutes`는 목표를 넘긴 분(달성·미설정이면 0), `appName`은 제안이 언급하는 앱(없으면 `null`)입니다.
 
 ```json
 {
   "success": true,
   "data": {
-    "date": "2026-07-07",
-    "feedback": "오늘은 점심 시간대 사용이 많았습니다. 앱을 열기 전 5분 휴식을 먼저 시도해보세요."
+    "suggestionType": "TOTAL_EXCEEDED",
+    "message": "오늘 폰 사용 시간이 목표보다 80분 많았어요. 그 중 특히 YouTube 사용이 많이 나타났어요. 내일은 YouTube 사용을 줄여 전체 폰 사용 시간을 줄여봐요.",
+    "excessMinutes": 80,
+    "appName": "YouTube"
   }
 }
 ```
 
-#### Errors
-
-| Status | Code                          | 설명                                 |
-| ------ | ----------------------------- | ------------------------------------ |
-| 422    | INSUFFICIENT_AI_FEEDBACK_DATA | 사용 로그 또는 사용 사유 데이터 부족 |
-
-### POST `/api/ai/suggest-goal`
-
-사용자의 목표 사유를 바탕으로 앱별 목표 시간/횟수를 제안합니다.
-
-- 인증: 필요
-- 상태: 예정
-
-#### Request Body
-
-| 필드           | 타입   | 필수 | 설명           |
-| -------------- | ------ | ---- | -------------- |
-| monitoredAppId | string | Y    | 주의 앱 ID     |
-| goalReason     | string | Y    | 목표 설정 이유 |
-
-#### Response 200
-
-```json
-{
-  "success": true,
-  "data": {
-    "monitoredAppId": "uuid",
-    "suggestedTargetMinutes": 60,
-    "suggestedTargetCount": 5,
-    "reason": "현재 목표 사유 기준으로 1시간 제한을 추천합니다."
-  }
-}
-```
+| suggestionType | 의미                                   |
+| -------------- | -------------------------------------- |
+| TOTAL_EXCEEDED | 전체 폰 사용이 전체 목표를 초과(제안1) |
+| APP_EXCEEDED   | 전체는 달성, 주의 앱 목표 초과(제안2)  |
+| ACHIEVED       | 전체·주의 앱 모두 달성(제안3)          |
+| NO_GOAL        | 전체 목표 미설정 → 목표 설정 안내      |
 
 ## 17. DeviceUsage
 
