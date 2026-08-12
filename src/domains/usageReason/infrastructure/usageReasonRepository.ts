@@ -20,3 +20,18 @@ export async function saveMany(usageReasons: NewUsageReason[]) {
     )
   );
 }
+
+export async function findAllByUserIdInRange(userId: string, startDate: Date, endDate: Date) {
+  return prisma.usageReason.findMany({
+    where: {
+      userId,
+      date: {
+        gte: startDate,
+        lte: endDate
+      }
+    },
+    orderBy: {
+      date: 'asc'
+    }
+  });
+}

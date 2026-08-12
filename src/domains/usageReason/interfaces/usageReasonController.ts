@@ -1,5 +1,5 @@
-import { UnauthorizedError } from '../../../shared/errors/appError';
-import { sendCreated } from '../../../shared/responses/apiResponse';
+import { BadRequestError, UnauthorizedError } from '../../../shared/errors/appError';
+import { sendCreated, sendSuccess } from '../../../shared/responses/apiResponse';
 import asyncHandler from '../../../shared/utils/asyncHandler';
 
 import * as usageReasonService from '../application/usageReasonService';
@@ -28,4 +28,17 @@ export const createUsageReason = asyncHandler(async (req, res) => {
   });
 
   sendCreated(res, result);
+});
+
+export const getUsageReasonCalendar = asyncHandler(async (req, res) => {
+  const userId = getAuthenticatedUserId(req.user);
+  const month = req.query.month;
+
+  if (typeof month !== 'string') {
+    throw new BadRequestError('month query is required (YYYY-MM)', 'VALIDATION_ERROR');
+  }
+
+  const result = await usageReasonService.getUsageReasonCalendar(userId, month);
+
+  sendSuccess(res, result);
 });
