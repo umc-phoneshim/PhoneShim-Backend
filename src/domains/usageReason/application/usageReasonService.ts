@@ -1,11 +1,13 @@
 import { AppError, NotFoundError } from '../../../shared/errors/appError';
 
 import * as monitoredAppRepository from '../../monitoredApp/infrastructure/monitoredAppRepository';
-import { formatDateOnly } from '../../usageLog/domain/usageLogEntity';
+import { formatDateOnly, parseMonthRange } from '../../usageLog/domain/usageLogEntity';
 import {
+  buildUsageReasonCalendar,
   createUsageReasonEntities,
   isWithinReasonWindow,
   type CreateUsageReasonPayload,
+  type UsageReasonCalendarDay,
   type UsageReasonRecord
 } from '../domain/usageReasonEntity';
 import * as usageReasonRepository from '../infrastructure/usageReasonRepository';
@@ -50,4 +52,14 @@ export async function createUsageReason(
     createdAt: row.createdAt,
     updatedAt: row.updatedAt
   }));
+}
+
+export async function getUsageReasonCalendar(
+  userId: string,
+  month: string
+): Promise<UsageReasonCalendarDay[]> {
+  const { start, end } = parseMonthRange(month);
+  const usageReasons = await usageReasonRepository.findAllByUserIdInRange(userId, start, end);
+
+  return buildUsageReasonCalendar(month, usageReasons);
 }

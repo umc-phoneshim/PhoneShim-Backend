@@ -1,6 +1,6 @@
 import prisma from '../../../shared/database/prismaClient';
 import { signAccessToken } from '../../../shared/auth/jwt';
-import { AppError, ForbiddenError } from '../../../shared/errors/appError';
+import { AppError, BadRequestError, ForbiddenError } from '../../../shared/errors/appError';
 import {
   isPrismaKnownError,
   PRISMA_UNIQUE_CONSTRAINT_ERROR
@@ -8,7 +8,9 @@ import {
 import { fetchKakaoUserInfo } from '../infrastructure/kakaoAuthClient';
 import { fetchGoogleUserInfo } from '../infrastructure/googleAuthClient';
 
-type Provider = 'KAKAO' | 'GOOGLE';
+export type Provider = 'KAKAO' | 'GOOGLE';
+type ProviderUserInfo = { providerUserId: string; email: string };
+type SocialLoginUserInfo = ProviderUserInfo & ({ name: string } | { nickname: string });
 
 function isUniqueConstraintError(error: unknown): boolean {
   return isPrismaKnownError(error, PRISMA_UNIQUE_CONSTRAINT_ERROR);
@@ -27,7 +29,7 @@ async function findUserBySocialAccount(provider: Provider, providerUserId: strin
 
 async function linkSocialAccountToUser(
   provider: Provider,
-  userInfo: { providerUserId: string; email: string },
+  userInfo: ProviderUserInfo,
   userId: string
 ) {
   return prisma.$transaction(async (tx) => {
@@ -41,6 +43,10 @@ async function linkSocialAccountToUser(
     });
     return tx.user.findUniqueOrThrow({ where: { id: userId } });
   });
+}
+
+async function verifyProviderUser(provider: Provider, token: string): Promise<SocialLoginUserInfo> {
+  return provider === 'KAKAO' ? fetchKakaoUserInfo(token) : fetchGoogleUserInfo(token);
 }
 
 async function createUserWithSocialAccount(
@@ -84,10 +90,7 @@ function guardLoginAccount<T extends LoginGuardedUser>(user: T): T {
 }
 
 export async function socialLogin(provider: Provider, accessToken: string) {
-  const userInfo =
-    provider === 'KAKAO'
-      ? await fetchKakaoUserInfo(accessToken)
-      : await fetchGoogleUserInfo(accessToken);
+  const userInfo = await verifyProviderUser(provider, accessToken);
 
   const name = 'nickname' in userInfo ? userInfo.nickname : userInfo.name;
 
@@ -135,4 +138,45 @@ export async function socialLogin(provider: Provider, accessToken: string) {
     accessToken: token,
     isNewUser
   };
+}
+
+export async function linkAccount(provider: Provider, token: string, userId: string) {
+  const userInfo = await verifyProviderUser(provider, token);
+
+  try {
+    await linkSocialAccountToUser(provider, userInfo, userId);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throw new AppError(
+        409,
+        'SOCIAL_ACCOUNT_ALREADY_LINKED',
+        '이미 연결된 소셜 계정입니다.'
+      );
+    }
+    throw error;
+  }
+
+  const account = await prisma.socialAccount.findUniqueOrThrow({
+    where: {
+      provider_providerUserId: {
+        provider,
+        providerUserId: userInfo.providerUserId
+      }
+    }
+  });
+
+  return {
+    id: account.id,
+    provider: account.provider,
+    providerUserId: account.providerUserId,
+    email: account.email
+  };
+}
+
+export function validateProvider(value: unknown): Provider {
+  if (value !== 'GOOGLE' && value !== 'KAKAO') {
+    throw new BadRequestError('provider must be GOOGLE or KAKAO', 'VALIDATION_ERROR');
+  }
+
+  return value;
 }

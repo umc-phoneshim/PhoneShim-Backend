@@ -10,6 +10,8 @@ const router = Router();
 
 router.use(authenticate);
 
+router.get('/calendar', usageReasonController.getUsageReasonCalendar);
+
 /**
  * @openapi
  * /api/usage-reasons:

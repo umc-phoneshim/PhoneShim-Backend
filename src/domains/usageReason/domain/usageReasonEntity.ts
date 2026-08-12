@@ -1,6 +1,10 @@
 import { BadRequestError } from '../../../shared/errors/appError';
 
-import { getKstDateOnly } from '../../usageLog/domain/usageLogEntity';
+import {
+  formatDateOnly,
+  getKstDateOnly,
+  parseMonthRange
+} from '../../usageLog/domain/usageLogEntity';
 
 // 사용 이유 팝업의 고정 객관식 선택지 (Figma REP-01: 여가/이동/습관/정보/기타).
 export const USAGE_REASON_CODES = ['LEISURE', 'COMMUTE', 'HABIT', 'INFO', 'OTHER'] as const;
@@ -51,6 +55,11 @@ export type UsageReasonRecord = {
   reason: UsageReasonCode;
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type UsageReasonCalendarDay = {
+  date: string;
+  hasReason: boolean;
 };
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -133,4 +142,27 @@ export function createUsageReasonEntities(payload: CreateUsageReasonPayload): Ne
     timeRangeEnd,
     reason
   }));
+}
+
+export function buildUsageReasonCalendar(
+  month: string,
+  usageReasons: { date: Date }[]
+): UsageReasonCalendarDay[] {
+  const { start, end } = parseMonthRange(month);
+  const reasonDates = new Set(usageReasons.map((reason) => formatDateOnly(reason.date)));
+  const calendar: UsageReasonCalendarDay[] = [];
+
+  for (
+    let current = new Date(start.getTime());
+    current.getTime() <= end.getTime();
+    current.setUTCDate(current.getUTCDate() + 1)
+  ) {
+    const date = formatDateOnly(current);
+    calendar.push({
+      date,
+      hasReason: reasonDates.has(date)
+    });
+  }
+
+  return calendar;
 }
