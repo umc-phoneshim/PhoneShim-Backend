@@ -22,4 +22,19 @@ router.use(authenticate);
  */
 router.get('/summary', reportController.getReportSummary);
 
+/**
+ * @openapi
+ * /api/reports/suggestion:
+ *   get:
+ *     summary: Get a coaching suggestion based on today's goal achievement (REP103)
+ *     tags:
+ *       - Report
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A suggestion (type, message, excess minutes, app name) for the given date.
+ */
+router.get('/suggestion', reportController.getReportSuggestion);
+
 export default router;

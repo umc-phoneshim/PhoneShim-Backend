@@ -28,3 +28,15 @@ export const getReportSummary = asyncHandler(async (req, res) => {
 
   sendSuccess(res, result);
 });
+
+// REP103: GET /api/reports/suggestion?date=YYYY-MM-DD
+export const getReportSuggestion = asyncHandler(async (req, res) => {
+  const userId = getAuthenticatedUserId(req.user);
+  const date = req.query.date;
+
+  const dateParam = typeof date === 'string' ? date : undefined;
+
+  const result = await reportService.getReportSuggestion(userId, dateParam);
+
+  sendSuccess(res, result);
+});

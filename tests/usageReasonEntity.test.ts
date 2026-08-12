@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildUsageReasonCalendar,
   createUsageReasonEntities,
   isWithinReasonWindow
 } from '../src/domains/usageReason/domain/usageReasonEntity';
@@ -85,5 +86,22 @@ describe('createUsageReasonEntities', () => {
         reasonCodes: ['LEISURE']
       })
     ).toThrow('timeRangeEnd must be after timeRangeStart');
+  });
+});
+
+describe('buildUsageReasonCalendar', () => {
+  it('marks duplicate reason rows as a single day with reasons', () => {
+    const result = buildUsageReasonCalendar(
+      new Date('2026-02-01T00:00:00.000Z'),
+      new Date('2026-02-28T00:00:00.000Z'),
+      [
+        { date: new Date('2026-02-02T00:00:00.000Z') },
+        { date: new Date('2026-02-02T00:00:00.000Z') }
+      ]
+    );
+
+    expect(result).toHaveLength(28);
+    expect(result[0]).toEqual({ date: '2026-02-01', hasReason: false });
+    expect(result[1]).toEqual({ date: '2026-02-02', hasReason: true });
   });
 });

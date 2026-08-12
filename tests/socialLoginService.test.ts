@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { fetchGoogleUserInfo } from '../src/domains/auth/infrastructure/googleAuthClient';
 import { fetchKakaoUserInfo } from '../src/domains/auth/infrastructure/kakaoAuthClient';
-import { socialLogin } from '../src/domains/auth/application/socialLoginService';
+import { linkAccount, socialLogin } from '../src/domains/auth/application/socialLoginService';
 import { signAccessToken } from '../src/shared/auth/jwt';
 import prisma from '../src/shared/database/prismaClient';
 
@@ -23,7 +23,8 @@ vi.mock('../src/shared/database/prismaClient', () => ({
   default: {
     $transaction: vi.fn(),
     socialAccount: {
-      findUnique: vi.fn()
+      findUnique: vi.fn(),
+      findUniqueOrThrow: vi.fn()
     },
     user: {
       create: vi.fn(),
@@ -39,6 +40,7 @@ const fetchKakaoUserInfoMock = vi.mocked(fetchKakaoUserInfo);
 const signAccessTokenMock = vi.mocked(signAccessToken);
 const transactionMock = vi.mocked(prisma.$transaction);
 const socialAccountFindUniqueMock = vi.mocked(prisma.socialAccount.findUnique);
+const socialAccountFindUniqueOrThrowMock = vi.mocked(prisma.socialAccount.findUniqueOrThrow);
 const userCreateMock = vi.mocked(prisma.user.create);
 const userFindUniqueMock = vi.mocked(prisma.user.findUnique);
 const userFindUniqueOrThrowMock = vi.mocked(prisma.user.findUniqueOrThrow);
@@ -198,6 +200,66 @@ describe('socialLogin', () => {
     await expect(socialLogin('GOOGLE', 'provider-token')).resolves.toEqual({
       accessToken: 'signed-token',
       isNewUser: false
+    });
+  });
+});
+
+describe('linkAccount', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    transactionMock.mockImplementation(runTransactionCallback as never);
+  });
+
+  it('links a verified Google account to the authenticated user', async () => {
+    fetchGoogleUserInfoMock.mockResolvedValueOnce({
+      providerUserId: 'google-1',
+      email: 'user@example.com',
+      name: 'User'
+    });
+    userFindUniqueMock.mockResolvedValueOnce({ id: 'user-1' } as never);
+    userFindUniqueOrThrowMock.mockResolvedValueOnce(activeUser as never);
+    socialAccountFindUniqueOrThrowMock.mockResolvedValueOnce({
+      id: 'social-1',
+      provider: 'GOOGLE',
+      providerUserId: 'google-1',
+      email: 'user@example.com'
+    } as never);
+
+    await expect(linkAccount('GOOGLE', 'id-token', 'user-1')).resolves.toEqual({
+      id: 'social-1',
+      provider: 'GOOGLE',
+      providerUserId: 'google-1',
+      email: 'user@example.com'
+    });
+  });
+
+  it('rejects linking when the verified email belongs to another user', async () => {
+    fetchKakaoUserInfoMock.mockResolvedValueOnce({
+      providerUserId: 'kakao-1',
+      email: 'other@example.com',
+      nickname: 'Other'
+    });
+    userFindUniqueMock.mockResolvedValueOnce({ id: 'user-2' } as never);
+
+    await expect(linkAccount('KAKAO', 'kakao-token', 'user-1')).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'SOCIAL_ACCOUNT_ALREADY_LINKED'
+    });
+    expect(transactionMock).not.toHaveBeenCalled();
+  });
+
+  it('maps unique social account conflicts to SOCIAL_ACCOUNT_ALREADY_LINKED', async () => {
+    fetchGoogleUserInfoMock.mockResolvedValueOnce({
+      providerUserId: 'google-1',
+      email: 'user@example.com',
+      name: 'User'
+    });
+    userFindUniqueMock.mockResolvedValueOnce({ id: 'user-1' } as never);
+    transactionMock.mockRejectedValueOnce(uniqueConstraintError());
+
+    await expect(linkAccount('GOOGLE', 'id-token', 'user-1')).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'SOCIAL_ACCOUNT_ALREADY_LINKED'
     });
   });
 });

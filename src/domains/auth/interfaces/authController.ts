@@ -3,7 +3,13 @@ import { Router, type Request, type Response } from 'express';
 import asyncHandler from '../../../shared/utils/asyncHandler';
 import { BadRequestError } from '../../../shared/errors/appError';
 import { authenticate } from '../../../shared/middlewares/authMiddleware';
-import { socialLogin } from '../application/socialLoginService';
+import { recoverWithdrawal } from '../application/recoverWithdrawalService';
+import {
+  linkAccount,
+  socialLogin,
+  validateProvider,
+  type Provider
+} from '../application/socialLoginService';
 import { withdrawUser } from '../application/withdrawUserService';
 
 const router = Router();
@@ -26,6 +32,13 @@ function validateIdToken(req: Request): string {
   }
 
   return idToken;
+}
+
+function validateProviderToken(req: Request): { provider: Provider; token: string } {
+  const provider = validateProvider(req.body.provider);
+  const token = provider === 'GOOGLE' ? validateIdToken(req) : validateAccessToken(req);
+
+  return { provider, token };
 }
 
 router.post(
@@ -52,6 +65,33 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
     const result = await withdrawUser(userId);
+    res.status(200).json({ success: true, data: result });
+  })
+);
+
+router.post(
+  '/logout',
+  authenticate,
+  asyncHandler(async (_req: Request, res: Response) => {
+    res.status(204).send();
+  })
+);
+
+router.post(
+  '/link-account',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { provider, token } = validateProviderToken(req);
+    const result = await linkAccount(provider, token, req.user!.userId);
+    res.status(200).json({ success: true, data: result });
+  })
+);
+
+router.post(
+  '/recover-withdrawal',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { provider, token } = validateProviderToken(req);
+    const result = await recoverWithdrawal(provider, token);
     res.status(200).json({ success: true, data: result });
   })
 );
