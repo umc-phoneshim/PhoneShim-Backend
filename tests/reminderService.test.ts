@@ -372,7 +372,7 @@ describe('reminderService MAIN105 sync events', () => {
       endTime: '2026-07-16T10:00:00.000Z'
     });
 
-    expect(emitReminderMainSyncEventMock).toHaveBeenCalledWith('reminder.created');
+    expect(emitReminderMainSyncEventMock).toHaveBeenCalledWith('reminder.created', 'user-1');
   });
 
   it('does not emit a created event when a reminder is created for another date', async () => {
@@ -408,7 +408,7 @@ describe('reminderService MAIN105 sync events', () => {
       endTime: '2026-07-17T10:00:00.000Z'
     });
 
-    expect(emitReminderMainSyncEventMock).toHaveBeenCalledWith('reminder.updated');
+    expect(emitReminderMainSyncEventMock).toHaveBeenCalledWith('reminder.updated', 'user-1');
   });
 
   it('emits a deleted event when a reminder is deleted for today in KST', async () => {
@@ -417,6 +417,6 @@ describe('reminderService MAIN105 sync events', () => {
 
     await deleteReminder('reminder-1', 'user-1');
 
-    expect(emitReminderMainSyncEventMock).toHaveBeenCalledWith('reminder.deleted');
+    expect(emitReminderMainSyncEventMock).toHaveBeenCalledWith('reminder.deleted', 'user-1');
   });
 });
