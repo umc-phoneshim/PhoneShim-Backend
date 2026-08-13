@@ -85,7 +85,7 @@ export async function createReminder(payload: CreateReminderPayload) {
   const created = await reminderRepository.save(reminder);
 
   if (isKstToday(created.date)) {
-    emitReminderMainSyncEvent('reminder.created');
+    emitReminderMainSyncEvent('reminder.created', created.userId);
   }
 
   return created;
@@ -127,7 +127,7 @@ export async function updateReminder(id: string, userId: string, payload: Update
     });
 
     if (isKstToday(current.date) || isKstToday(updated.date)) {
-      emitReminderMainSyncEvent('reminder.updated');
+      emitReminderMainSyncEvent('reminder.updated', userId);
     }
 
     return updated;
@@ -147,7 +147,7 @@ export async function deleteReminder(id: string, userId: string) {
     await reminderRepository.deleteByIdAndUserId(id, userId);
 
     if (isKstToday(current.date)) {
-      emitReminderMainSyncEvent('reminder.deleted');
+      emitReminderMainSyncEvent('reminder.deleted', userId);
     }
   } catch (error) {
     if (reminderRepository.isPrismaKnownError(error, reminderRepository.RECORD_NOT_FOUND_ERROR)) {
