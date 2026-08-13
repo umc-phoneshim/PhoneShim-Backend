@@ -1050,6 +1050,32 @@
 
 현재 Socket.IO 서버는 연결 기반을 제공하며, KST 기준 오늘 날짜에 영향을 주는 리마인더 생성/수정/삭제 성공 후 `reminder.created`, `reminder.updated`, `reminder.deleted` 이벤트를 발행합니다. 이벤트 payload의 `requiresRefetch`는 `true`이므로 클라이언트는 이벤트 수신 후 오늘 목록을 재조회합니다.
 
+Socket.IO 인증은 `SOCKET_AUTH_REQUIRED` 환경 변수로 제어합니다.
+
+- `SOCKET_AUTH_REQUIRED=false` 또는 미설정: 모든 연결을 허용하고 리마인더 동기화 이벤트를 전체 연결에 broadcast합니다. 안드로이드 클라이언트 적용 전 개발/이행 단계 기본값입니다.
+- `SOCKET_AUTH_REQUIRED=true`: 연결 시 `handshake.auth.token`으로 access token을 전달해야 합니다. 서버는 JWT를 검증한 뒤 해당 socket을 `user:<userId>` room에 join시키고, 리마인더 동기화 이벤트를 해당 사용자 room에만 발행합니다.
+
+#### Socket.IO 연결 인증
+
+운영에서 `SOCKET_AUTH_REQUIRED=true`인 경우 클라이언트는 Socket.IO 연결 시 REST API와 동일한 access token을 전달합니다.
+
+```ts
+const socket = io(BASE_URL, {
+  auth: {
+    token: accessToken
+  }
+});
+```
+
+인증 실패 시 연결은 거부되며 에러 데이터는 다음 형식입니다.
+
+```json
+{
+  "code": "INVALID_TOKEN",
+  "message": "Invalid access token"
+}
+```
+
 #### 동기화 대상 기준
 
 - KST 기준 오늘 날짜의 리마인더 생성/수정/삭제는 MAIN105 동기화 대상입니다.
@@ -1457,7 +1483,7 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 
 - 인증: 필요
 - 상태: 구현완료
-- 입력/수정 가능 시간: 당일 22:00 ~ 익일 10:00
+- 입력 가능 시간: 제한 없음. 차단 팝업처럼 즉시 뜨는 플로우에서도 저장할 수 있습니다.
 - 사용 이유는 고정 객관식 코드입니다: `LEISURE`(여가 시간), `COMMUTE`(이동 시간 중), `HABIT`(습관적으로), `INFO`(정보를 얻기 위해), `OTHER`(기타).
 - 체크박스로 여러 개를 고를 수 있으며, 고른 코드마다 사용 사유 레코드가 하나씩 생성됩니다. 같은 코드를 중복으로 보내면 한 번만 저장됩니다.
 
@@ -1501,7 +1527,6 @@ MAIN104에서 사용할 오늘 주의 앱 사용 현황을 조회합니다.
 | Status | Code                        | 설명                                                     |
 | ------ | --------------------------- | -------------------------------------------------------- |
 | 400    | VALIDATION_ERROR            | 필수값 누락, `reasonCodes`가 비었거나 허용되지 않은 코드 |
-| 403    | USAGE_REASON_TIME_FORBIDDEN | 입력 가능 시간대가 아님                                  |
 | 404    | MONITORED_APP_NOT_FOUND     | 주의 앱이 없거나 본인 소유가 아님                        |
 
 ### GET `/api/usage-reasons/calendar?month=YYYY-MM`

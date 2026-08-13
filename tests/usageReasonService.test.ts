@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as monitoredAppRepository from '../src/domains/monitoredApp/infrastructure/monitoredAppRepository';
 import {
@@ -45,11 +45,6 @@ const savedRow = (id: string, reason: string) => ({
 describe('usageReasonService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it('rejects creating a usage reason for a missing monitored app', async () => {
@@ -62,19 +57,7 @@ describe('usageReasonService', () => {
     expect(saveManyMock).not.toHaveBeenCalled();
   });
 
-  it('rejects creating a usage reason outside the allowed time window', async () => {
-    vi.setSystemTime(new Date('2026-07-16T12:59:59.999Z'));
-    findByIdAndUserIdMock.mockResolvedValueOnce({ id: 'app-1' } as never);
-
-    await expect(createUsageReason(payload)).rejects.toMatchObject({
-      statusCode: 403,
-      code: 'USAGE_REASON_TIME_FORBIDDEN'
-    });
-    expect(saveManyMock).not.toHaveBeenCalled();
-  });
-
-  it('saves one record per reason code inside the allowed time window', async () => {
-    vi.setSystemTime(new Date('2026-07-16T13:00:00.000Z'));
+  it('saves one record per reason code without a time window restriction', async () => {
     findByIdAndUserIdMock.mockResolvedValueOnce({ id: 'app-1' } as never);
     saveManyMock.mockResolvedValueOnce([
       savedRow('reason-1', 'LEISURE'),
