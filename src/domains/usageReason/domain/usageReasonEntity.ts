@@ -58,30 +58,6 @@ export type UsageReasonCalendarDay = {
   hasReason: boolean;
 };
 
-const HOUR_MS = 60 * 60 * 1000;
-const HOURS_IN_A_DAY = 24;
-const KST_OFFSET_HOURS = 9;
-
-const REASON_INPUT_START_HOUR_KST = 22;
-const REASON_INPUT_END_HOUR_KST = 10;
-
-function kstDateTime(dateOnly: Date, hourInKst: number): Date {
-  const hoursFromUtcMidnight = hourInKst - KST_OFFSET_HOURS;
-
-  return new Date(dateOnly.getTime() + hoursFromUtcMidnight * HOUR_MS);
-}
-
-function nextDay(dateOnly: Date): Date {
-  return new Date(dateOnly.getTime() + HOURS_IN_A_DAY * HOUR_MS);
-}
-
-export function isWithinReasonWindow(dateOnly: Date, now: Date): boolean {
-  const windowStart = kstDateTime(dateOnly, REASON_INPUT_START_HOUR_KST);
-  const windowEnd = kstDateTime(nextDay(dateOnly), REASON_INPUT_END_HOUR_KST);
-
-  return now.getTime() >= windowStart.getTime() && now.getTime() <= windowEnd.getTime();
-}
-
 function parseTime(value: string, fieldName: string): Date {
   const parsed = new Date(value);
 

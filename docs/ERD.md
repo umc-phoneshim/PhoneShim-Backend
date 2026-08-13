@@ -294,7 +294,7 @@ reminders
 - `reminders`는 같은 사용자/같은 날짜 안에서 시간 범위가 서로 겹칠 수 없습니다.
 - `reminders.start_time`은 `reminders.end_time`보다 이전이어야 합니다.
 - `reminders.restrict_mode`가 `SPECIFIC_APP`이면 `reminder_restricted_apps`가 최소 1개 있어야 합니다.
-- `usage_reasons` 입력은 당일 22:00 ~ 익일 10:00 시간대에만 허용합니다.
+- `usage_reasons` 입력은 차단 팝업처럼 즉시 뜨는 플로우에서도 저장할 수 있도록 시간대 제한 없이 허용합니다.
 - Figma `REP-01` 기준으로 사용 이유는 고정 객관식 코드에서 복수 선택하며, 미선택 종료 시 `OTHER`(기타)로 저장합니다.
 - `alert_settings.alert_time_minutes`는 1320~1439(22:00~23:59) 범위만 허용합니다.
 

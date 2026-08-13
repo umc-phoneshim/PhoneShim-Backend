@@ -2,23 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildUsageReasonCalendar,
-  createUsageReasonEntities,
-  isWithinReasonWindow
+  createUsageReasonEntities
 } from '../src/domains/usageReason/domain/usageReasonEntity';
-
-describe('isWithinReasonWindow', () => {
-  const dateOnly = new Date('2026-07-16T00:00:00.000Z');
-
-  it('allows the configured KST reason input window inclusively', () => {
-    expect(isWithinReasonWindow(dateOnly, new Date('2026-07-16T13:00:00.000Z'))).toBe(true);
-    expect(isWithinReasonWindow(dateOnly, new Date('2026-07-17T01:00:00.000Z'))).toBe(true);
-  });
-
-  it('rejects times outside the reason input window', () => {
-    expect(isWithinReasonWindow(dateOnly, new Date('2026-07-16T12:59:59.999Z'))).toBe(false);
-    expect(isWithinReasonWindow(dateOnly, new Date('2026-07-17T01:00:00.001Z'))).toBe(false);
-  });
-});
 
 describe('createUsageReasonEntities', () => {
   const base = {
