@@ -42,6 +42,7 @@ services:
       GOOGLE_WEB_CLIENT_ID: ${GOOGLE_WEB_CLIENT_ID}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change-this-access-secret}
       JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-1h}
+      SOCKET_AUTH_REQUIRED: ${SOCKET_AUTH_REQUIRED:-false}
     ports:
       - '${PORT:-3000}:3000'
     depends_on:
