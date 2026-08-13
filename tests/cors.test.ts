@@ -6,17 +6,39 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { DEFAULT_DEVELOPMENT_ORIGINS, parseCorsOrigins } from '../src/shared/config/cors';
-import { createSocketServer } from '../src/shared/socket/socketServer';
+import type { signAccessToken as signAccessTokenType } from '../src/shared/auth/jwt';
+import type { emitReminderMainSyncEvent as emitReminderMainSyncEventType } from '../src/shared/socket/mainSyncEvents';
+import type { createSocketServer as createSocketServerType } from '../src/shared/socket/socketServer';
 
 let app: Express;
 let httpServer: http.Server;
-let socketServer: ReturnType<typeof createSocketServer>;
+let socketServer: ReturnType<typeof createSocketServerType>;
 let serverUrl: string;
+let signAccessToken: typeof signAccessTokenType;
+let emitReminderMainSyncEvent: typeof emitReminderMainSyncEventType;
+
+const withSocketAuthRequired = async <T>(required: boolean, callback: () => Promise<T>): Promise<T> => {
+  const previous = process.env.SOCKET_AUTH_REQUIRED;
+  process.env.SOCKET_AUTH_REQUIRED = required ? 'true' : 'false';
+
+  try {
+    return await callback();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.SOCKET_AUTH_REQUIRED;
+    } else {
+      process.env.SOCKET_AUTH_REQUIRED = previous;
+    }
+  }
+};
 
 beforeAll(async () => {
   process.env.DATABASE_URL ||= 'postgresql://user:password@localhost:5432/phoneshim_test';
   process.env.GOOGLE_WEB_CLIENT_ID ||= 'test-google-client-id.apps.googleusercontent.com';
   ({ default: app } = await import('../src/app'));
+  ({ signAccessToken } = await import('../src/shared/auth/jwt'));
+  ({ emitReminderMainSyncEvent } = await import('../src/shared/socket/mainSyncEvents'));
+  const { createSocketServer } = await import('../src/shared/socket/socketServer');
 
   httpServer = http.createServer(app);
   socketServer = createSocketServer(httpServer);
@@ -128,31 +150,211 @@ describe('CORS configuration', () => {
   });
 
   it('establishes a real Socket.IO connection from an allowed origin', async () => {
-    const client = createSocketClient(serverUrl, {
-      extraHeaders: { Origin: DEFAULT_DEVELOPMENT_ORIGINS[0] },
-      forceNew: true,
-      transports: ['websocket']
-    });
-
-    try {
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Socket.IO connection timed out')), 3000);
-
-        client.once('connect', () => {
-          clearTimeout(timeout);
-          resolve();
-        });
-        client.once('connect_error', (error) => {
-          clearTimeout(timeout);
-          reject(error);
-        });
+    await withSocketAuthRequired(false, async () => {
+      const client = createSocketClient(serverUrl, {
+        extraHeaders: { Origin: DEFAULT_DEVELOPMENT_ORIGINS[0] },
+        forceNew: true,
+        transports: ['websocket']
       });
 
-      expect(client.connected).toBe(true);
-      expect(client.id).toBeTruthy();
-    } finally {
-      client.close();
-    }
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Socket.IO connection timed out')), 3000);
+
+          client.once('connect', () => {
+            clearTimeout(timeout);
+            resolve();
+          });
+          client.once('connect_error', (error) => {
+            clearTimeout(timeout);
+            reject(error);
+          });
+        });
+
+        expect(client.connected).toBe(true);
+        expect(client.id).toBeTruthy();
+      } finally {
+        client.close();
+      }
+    });
+  });
+
+  it('rejects a Socket.IO connection without a token when auth is required', async () => {
+    await withSocketAuthRequired(true, async () => {
+      const client = createSocketClient(serverUrl, {
+        extraHeaders: { Origin: DEFAULT_DEVELOPMENT_ORIGINS[0] },
+        forceNew: true,
+        reconnection: false,
+        transports: ['websocket']
+      });
+
+      try {
+        const error = await new Promise<Error & { data?: unknown }>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Socket.IO auth timeout')), 3000);
+
+          client.once('connect', () => {
+            clearTimeout(timeout);
+            reject(new Error('Socket.IO auth accepted a missing token'));
+          });
+          client.once('connect_error', (connectionError) => {
+            clearTimeout(timeout);
+            resolve(connectionError);
+          });
+        });
+
+        expect(client.connected).toBe(false);
+        expect(error.data).toEqual({
+          code: 'INVALID_TOKEN',
+          message: 'Invalid access token'
+        });
+      } finally {
+        client.close();
+      }
+    });
+  });
+
+  it('rejects a Socket.IO connection with an invalid token when auth is required', async () => {
+    await withSocketAuthRequired(true, async () => {
+      const client = createSocketClient(serverUrl, {
+        auth: { token: 'invalid-token' },
+        extraHeaders: { Origin: DEFAULT_DEVELOPMENT_ORIGINS[0] },
+        forceNew: true,
+        reconnection: false,
+        transports: ['websocket']
+      });
+
+      try {
+        const error = await new Promise<Error & { data?: unknown }>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Socket.IO auth timeout')), 3000);
+
+          client.once('connect', () => {
+            clearTimeout(timeout);
+            reject(new Error('Socket.IO auth accepted an invalid token'));
+          });
+          client.once('connect_error', (connectionError) => {
+            clearTimeout(timeout);
+            resolve(connectionError);
+          });
+        });
+
+        expect(client.connected).toBe(false);
+        expect(error.data).toEqual({
+          code: 'INVALID_TOKEN',
+          message: 'Invalid access token'
+        });
+      } finally {
+        client.close();
+      }
+    });
+  });
+
+  it('accepts a Socket.IO connection with a valid token when auth is required', async () => {
+    await withSocketAuthRequired(true, async () => {
+      const client = createSocketClient(serverUrl, {
+        auth: {
+          token: signAccessToken({ userId: 'user-1', email: 'user1@example.com' })
+        },
+        extraHeaders: { Origin: DEFAULT_DEVELOPMENT_ORIGINS[0] },
+        forceNew: true,
+        reconnection: false,
+        transports: ['websocket']
+      });
+
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Socket.IO auth timeout')), 3000);
+
+          client.once('connect', () => {
+            clearTimeout(timeout);
+            resolve();
+          });
+          client.once('connect_error', (error) => {
+            clearTimeout(timeout);
+            reject(error);
+          });
+        });
+
+        expect(client.connected).toBe(true);
+        expect(client.id).toBeTruthy();
+      } finally {
+        client.close();
+      }
+    });
+  });
+
+  it('emits reminder sync events only to the authenticated user room when auth is required', async () => {
+    await withSocketAuthRequired(true, async () => {
+      const targetClient = createSocketClient(serverUrl, {
+        auth: {
+          token: signAccessToken({ userId: 'user-1', email: 'user1@example.com' })
+        },
+        extraHeaders: { Origin: DEFAULT_DEVELOPMENT_ORIGINS[0] },
+        forceNew: true,
+        reconnection: false,
+        transports: ['websocket']
+      });
+      const otherClient = createSocketClient(serverUrl, {
+        auth: {
+          token: signAccessToken({ userId: 'user-2', email: 'user2@example.com' })
+        },
+        extraHeaders: { Origin: DEFAULT_DEVELOPMENT_ORIGINS[0] },
+        forceNew: true,
+        reconnection: false,
+        transports: ['websocket']
+      });
+
+      try {
+        await Promise.all([
+          new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Target socket timed out')), 3000);
+            targetClient.once('connect', () => {
+              clearTimeout(timeout);
+              resolve();
+            });
+            targetClient.once('connect_error', (error) => {
+              clearTimeout(timeout);
+              reject(error);
+            });
+          }),
+          new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Other socket timed out')), 3000);
+            otherClient.once('connect', () => {
+              clearTimeout(timeout);
+              resolve();
+            });
+            otherClient.once('connect_error', (error) => {
+              clearTimeout(timeout);
+              reject(error);
+            });
+          })
+        ]);
+
+        let otherClientReceived = false;
+        const targetEvent = new Promise<unknown>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Reminder event timed out')), 3000);
+          targetClient.once('reminder.created', (payload) => {
+            clearTimeout(timeout);
+            resolve(payload);
+          });
+        });
+        otherClient.once('reminder.created', () => {
+          otherClientReceived = true;
+        });
+
+        emitReminderMainSyncEvent('reminder.created', 'user-1');
+
+        await expect(targetEvent).resolves.toEqual({
+          event: 'reminder.created',
+          reason: 'today-reminder-changed',
+          requiresRefetch: true
+        });
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        expect(otherClientReceived).toBe(false);
+      } finally {
+        targetClient.close();
+        otherClient.close();
+      }
+    });
   });
 
   it('rejects a real Socket.IO connection from an unconfigured origin', async () => {
